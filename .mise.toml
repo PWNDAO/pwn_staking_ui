@@ -1,0 +1,8 @@
+# [env]
+# supports arbitrary env vars so mise can be used like direnv/dotenv
+# NODE_ENV = 'production'
+
+[tools]
+# specify single or multiple versions
+yarn = '3.3.1'
+node = "20"
