@@ -1,0 +1,1 @@
+export const SECONDS_IN_EPOCH = 2_419_200 as const

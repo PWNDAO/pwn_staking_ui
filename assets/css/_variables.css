@@ -1,0 +1,14 @@
+:root {
+    /* === THEME COLORS === */
+    --background-color: #111111;
+    --content-background-color: #171717;
+    --primary-color: #00FFE0;
+    --primary-color-darker: #0F2926;
+    --text-color: #F3F1FF;
+    --border-color: #434343;
+    --subtitle-color: #A4A4A4;
+
+    /* === FONTS === */ 
+    --font-family-screener: "Screener", "sans-serif";
+    --font-family-supreme: "Supreme", "monospace";
+}

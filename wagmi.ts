@@ -39,13 +39,16 @@ const CHAIN_SETTINGS = {
   }
 } as const
 
-const activatedChainSettings = CHAIN_SETTINGS[Number(import.meta.env.VITE_PUBLIC_ENABLED_CHAIN_ID) as 1 | 11155111]
+export const ACTIVE_CHAIN = Number(import.meta.env.VITE_PUBLIC_ENABLED_CHAIN_ID) as 1 | 11155111
+console.log(ACTIVE_CHAIN)
+
+const activatedChainSettings = CHAIN_SETTINGS[ACTIVE_CHAIN]
 
 export const wagmiAdapter = new WagmiAdapter({
   ssr: true,
-  storage: createStorage({
-    storage: cookieStorage
-  }),
+  // storage: createStorage({
+  //   storage: cookieStorage
+  // }),
   projectId: import.meta.env.VITE_PUBLIC_WC_PROJECT_ID!,
   networks: [activatedChainSettings.chain],
   transports: {
