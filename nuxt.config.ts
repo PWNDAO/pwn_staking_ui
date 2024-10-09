@@ -11,5 +11,12 @@ export default defineNuxtConfig({
     plugins: {
       'postcss-nested': {},
     }
-  }
+  },
+  nitro: {
+    esbuild: {
+      options: {
+        target: 'esnext',
+      },
+    },
+  },
 })
