@@ -5,6 +5,7 @@ import { getLogs } from "viem/actions";
 import { getClient, readContract, readContracts } from "wagmi/actions";
 import { EPOCH_CLOCK_ABI, VE_PWN_TOKEN_ABI } from "~/constants/abis";
 import { EPOCH_CLOCK, PWN_TOKEN, STAKED_PWN_NFT, VE_PWN_TOKEN } from "~/constants/addresses";
+import { SECONDS_IN_EPOCH } from "~/constants/contracts";
 import { ACTIVE_CHAIN, wagmiAdapter } from "~/wagmi";
 
 export const useUserPwnBalance = (walletAddress: Ref<Address | undefined>) => {
@@ -55,7 +56,6 @@ export const useUserStakes = (walletAddress: Ref<Address | undefined>) => {
         queryKey: ['stakedPwnBalance', walletAddress],
         queryFn: async (): Promise<StakeDetail[]> => {
             const client = getClient(wagmiAdapter.wagmiConfig)
-            console.log(walletAddress.value)
             const receivedStPwnNfts = await getLogs(client!, {
                 address: STAKED_PWN_NFT[ACTIVE_CHAIN],
                 event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)'),
@@ -64,9 +64,6 @@ export const useUserStakes = (walletAddress: Ref<Address | undefined>) => {
                 },
                 fromBlock: 0n,
             })
-
-            console.log('receivedStPwnNfts')
-            console.log(receivedStPwnNfts)
 
             // TODO fetch also these events, or rather just call `owner` on each of the NFT received in `receivedStPwnNfts`
             const sentStPwnNfts = await getLogs(client!, {
@@ -108,6 +105,10 @@ export const useInitialEpochTimestamp = () => {
     })
 }
 
+export const getTimeTillNextEpoch = (initialEpochTimestamp: number): number => {
+    return (Math.floor(Date.now() / 1000) - initialEpochTimestamp) % SECONDS_IN_EPOCH
+}
+
 export const useUserVotingPower = (walletAddress: Ref<Address | undefined>, currentEpoch: Ref<bigint | undefined>) => {
     return useReadContract({
         address: VE_PWN_TOKEN[ACTIVE_CHAIN]!,
@@ -131,11 +132,11 @@ export const getMultiplierForLockUpEpochs = (lockUpEpochs: number) => {
     else return 3.5;
 }
 
-export const useUserVotingMultiplier = (walletAddress: Ref<Address | undefined>, currentEpoch: Ref<bigint | undefined>) => {
+export const useUserStakesWithVotingPower = (walletAddress: Ref<Address | undefined>, currentEpoch: Ref<number | undefined>) => {
     return useQuery({
+        queryKey: ['userStakesWithVotingPower', walletAddress, currentEpoch],
         enabled: computed(() => walletAddress.value !== undefined && currentEpoch.value !== undefined),
-        queryKey: ['votingMultiplier', walletAddress], // TODO add currentEpoch to queryKey?
-        queryFn: async () => {
+        queryFn: async (): Promise<StakeDetail[]> => {
             const stakeIdsWhereBeneficiary = await readContract(wagmiAdapter.wagmiConfig, {
                 abi: VE_PWN_TOKEN_ABI,
                 address: VE_PWN_TOKEN[ACTIVE_CHAIN]!,
@@ -143,24 +144,23 @@ export const useUserVotingMultiplier = (walletAddress: Ref<Address | undefined>,
                 args: [walletAddress.value!, Number(currentEpoch.value)!]
             })
 
-            console.log(walletAddress.value)
-            console.log(currentEpoch.value)
-            console.log('stakeIdsWhereBeneficiary')
-            console.log(stakeIdsWhereBeneficiary)
+            return await getStakesDetails(stakeIdsWhereBeneficiary)
+        }
+    })
+}
 
-            const stakesDetails = await getStakesDetails(stakeIdsWhereBeneficiary)
-
-            console.log('stakesDetails')
-            console.log(stakesDetails)
-
+export const useUserVotingMultiplier = (currentEpoch: Ref<bigint | undefined>, stakesWithVotingPower: Ref<StakeDetail[] | undefined>) => {
+    return useQuery({
+        enabled: computed(() => currentEpoch.value !== undefined && !!stakesWithVotingPower.value?.length),
+        queryKey: ['votingMultiplier', currentEpoch, stakesWithVotingPower],
+        queryFn: async () => {
             // calculating weight average
             let numerator = 0
             let denominator = 0
 
-            for (const stakeDetail of stakesDetails) {
+            for (const stakeDetail of stakesWithVotingPower.value!) {
                 const epochWhereUnlock = stakeDetail.initialEpoch + stakeDetail.lockUpEpochs
                 const remainingEpochs = epochWhereUnlock - Number(currentEpoch.value)
-                console.log(remainingEpochs)
                 const multiplier = getMultiplierForLockUpEpochs(remainingEpochs)
                 const formattedAmount = Number(formatUnits(stakeDetail.amount, 18))
                 if (multiplier > 0) {
@@ -168,21 +168,57 @@ export const useUserVotingMultiplier = (walletAddress: Ref<Address | undefined>,
                     numerator += formattedAmount * multiplier
                 }
             }
-
-            console.log(numerator)
-            console.log(denominator)
-
             return numerator / denominator
         }
     })
 }
 
-export const useUserCumulativeVotingPowerSummary = (walletAddress: Ref<Address | undefined>) => {
+interface PowerInEpoch {
+    epoch: bigint
+    power: bigint
+}
+
+export const useUserCumulativeVotingPowerSummary = (stakesWithVotingPower: Ref<StakeDetail[] | undefined>) => {
     return useQuery({
-        queryKey: ['cumulativeVotingPower', walletAddress],
-        enabled: computed(() => walletAddress.value !== undefined),
-        queryFn: async () => {
-            // TODO
+        queryKey: ['cumulativeVotingPower', stakesWithVotingPower],
+        enabled: computed(() => !!stakesWithVotingPower.value?.length),
+        queryFn: async (): Promise<Array<PowerInEpoch[]>> => {
+            const allStakesPowers = await readContracts(wagmiAdapter.wagmiConfig, {
+                contracts: stakesWithVotingPower.value!.map(stake => ({
+                    address: VE_PWN_TOKEN[ACTIVE_CHAIN]!,
+                    abi: VE_PWN_TOKEN_ABI,
+                    functionName: 'stakePowers',
+                    args: [BigInt(stake.initialEpoch), stake.amount, BigInt(stake.lockUpEpochs)]
+                }))
+            })
+            return allStakesPowers.map(result => result.result) as unknown as Array<PowerInEpoch[]>
         }
     })
+}
+
+export const formatCumulativeVotingPowerSummary = (stakesPowers: Array<PowerInEpoch[]>): Record<number, bigint> => {
+    const result: Record<number, bigint> = {}
+    
+    for (const stakePowers of stakesPowers) {
+        const lastItemIndex = stakePowers.length - 1
+
+        for (const [index, stakePower] of stakePowers.entries()) {
+            const startEpoch = Number(stakePower.epoch)
+            const endEpoch = index === lastItemIndex ? startEpoch : Number(stakePowers[index + 1].epoch) 
+
+            for (let epoch = startEpoch; epoch < endEpoch; epoch++) {
+                if (epoch in result) {
+                    result[epoch] += stakePower.power
+                } else {
+                    result[epoch] = stakePower.power
+                }
+            }
+        }
+    }
+
+    const lastEpochWithPower = Math.max(...Object.keys(result).map(epoch => Number(epoch)))
+    result[lastEpochWithPower + 1] = 0n
+    result[lastEpochWithPower + 2] = 0n // filling for better graph displaying
+
+    return result
 }

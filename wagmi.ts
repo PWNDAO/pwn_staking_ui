@@ -40,7 +40,6 @@ const CHAIN_SETTINGS = {
 } as const
 
 export const ACTIVE_CHAIN = Number(import.meta.env.VITE_PUBLIC_ENABLED_CHAIN_ID) as 1 | 11155111
-console.log(ACTIVE_CHAIN)
 
 const activatedChainSettings = CHAIN_SETTINGS[ACTIVE_CHAIN]
 

@@ -1028,6 +1028,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@kurkle/color@npm:^0.3.0":
+  version: 0.3.2
+  resolution: "@kurkle/color@npm:0.3.2"
+  checksum: 79e97b31f8f6efb28c69d373f94b0c7480226fe8ec95221f518ac998e156444a496727ce47de6d728eb5c3369288e794cba82cae34253deb0d472d3bfe080e49
+  languageName: node
+  linkType: hard
+
 "@kwsites/file-exists@npm:^1.1.1":
   version: 1.1.1
   resolution: "@kwsites/file-exists@npm:1.1.1"
@@ -4088,6 +4095,15 @@ __metadata:
   version: 5.3.0
   resolution: "chalk@npm:5.3.0"
   checksum: 623922e077b7d1e9dedaea6f8b9e9352921f8ae3afe739132e0e00c275971bdd331268183b2628cf4ab1727c45ea1f28d7e24ac23ce1db1eb653c414ca8a5a80
+  languageName: node
+  linkType: hard
+
+"chart.js@npm:^4.4.4":
+  version: 4.4.4
+  resolution: "chart.js@npm:4.4.4"
+  dependencies:
+    "@kurkle/color": ^0.3.0
+  checksum: cbca10d97e2fcdff3d718e8ac770d382bc0e84bc2939a0d0e33868761ac39940f77a2a90da69c399006e8c3684ffdab3c6fafa5be306ff767290d5c11cf770fb
   languageName: node
   linkType: hard
 
@@ -8452,12 +8468,14 @@ __metadata:
     "@tanstack/vue-query": ">=5.45.0"
     "@vueuse/core": ^11.1.0
     "@wagmi/vue": latest
+    chart.js: ^4.4.4
     nuxt: ^3.11.2
     nuxt-svgo: latest
     postcss: ^8.4.47
     postcss-nested: ^6.2.0
     viem: ^2.21.16
     vue: ">=3.4.21"
+    vue-chartjs: ^5.3.1
     vue-router: ^4.3.2
     wagmi: ^2.12.16
   languageName: unknown
@@ -10242,6 +10260,16 @@ __metadata:
   dependencies:
     ufo: ^1.5.4
   checksum: 07822475d57c96a91aa7e61f60e5e1dc04a285f3132f4e133765824522f35b5c1a003429fbdd92c8c386f36f1eabccf711171f5941c74dad27e1b656c2ce7094
+  languageName: node
+  linkType: hard
+
+"vue-chartjs@npm:^5.3.1":
+  version: 5.3.1
+  resolution: "vue-chartjs@npm:5.3.1"
+  peerDependencies:
+    chart.js: ^4.1.1
+    vue: ^3.0.0-0 || ^2.7.0
+  checksum: e1775411bc9fa33c428327e6b32a73b5e7211a98f742ab2c3ab5f7bf32adb5853ecf58f2c9079d0e2106b00c14bae288bcfab4bf9296e1ca2a63924e35b55f9e
   languageName: node
   linkType: hard
 

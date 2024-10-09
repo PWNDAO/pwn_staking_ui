@@ -7,6 +7,7 @@
         <div class="header__menu-items-wrapper">
             <div class="header__menu-item header__menu-item--active">Staking</div>
             <a class="header__menu-item" href="https://voting.pwn.xyz" target="_blank">Voting</a>
+            <a class="header__menu-item" href="https://app.pwn.xyz" target="_blank">App</a>
         </div>
 
         <div class="header__connect-wallet" @click="handleWalletClick">

@@ -43,6 +43,8 @@
             </div>
         </div>
 
+        <GraphCumulativeVotingPower />
+
         <div v-if="hasAnyStake">
             <h3 class="homepage__positions-heading">Positions ({{ stakesCount }})</h3>
             <TablePositions />
@@ -54,6 +56,7 @@
 import { useAccount } from '@wagmi/vue';
 import { formatUnits } from 'viem';
 import { SECONDS_IN_EPOCH } from '~/constants/contracts';
+import { useUserStakesWithVotingPower } from '~/utils/hooks';
 
 const { address } = useAccount()
 
@@ -63,9 +66,6 @@ const pwnTokenBalanceFormatted = computed(() => {
     if (pwnTokenBalance.value === undefined) { 
         return undefined
     }
-
-    console.log(`pwnTokenBalance for user ${address.value}`)
-    console.log(pwnTokenBalance.value)
 
     return formatUnits(pwnTokenBalance.value, 18)
 })
@@ -87,9 +87,6 @@ const stakedTokensFormatted = computed(() => {
         return undefined
     }
 
-    console.log(`stakedTokens for user ${address.value}`)
-    console.log(stakedTokens.value)
-
     return formatUnits(stakedTokens.value, 18)
 })
 
@@ -98,9 +95,6 @@ const currentEpoch = computed(() => {
     if (currentEpochData.data?.value === undefined) {
         return undefined
     }
-
-    console.log('currentEpoch')
-    console.log(currentEpochData.data.value)
 
     // TODO remove this 1n, only for testing
     return BigInt(currentEpochData.data.value) + 1n
@@ -126,11 +120,7 @@ const secondsTillNextEpoch = computed(() => {
 
 // TODO check if this returns correct data
 const votingPowerData = useUserVotingPower(address, currentEpoch)
-const votingPower = computed(() => {
-    console.log('votingPower')
-    console.log(votingPowerData.data?.value)
-    return votingPowerData.data?.value 
-})
+const votingPower = computed(() => votingPowerData.data?.value)
 const votingPowerFormatted = computed(() => {
     if (votingPower.value === undefined) {
         return undefined
@@ -139,7 +129,17 @@ const votingPowerFormatted = computed(() => {
     return formatUnits(votingPower.value, 18)
 })
 
-const votingMultiplierData = useUserVotingMultiplier(address, currentEpoch)
+const currentEpochNumber = computed(() => {
+    if (currentEpoch.value === undefined) {
+        return undefined
+    }
+
+    return Number(currentEpoch.value)
+})
+const userStakesWithVotingPowerQuery = useUserStakesWithVotingPower(address, currentEpochNumber)
+const userStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.data.value)
+
+const votingMultiplierData = useUserVotingMultiplier(currentEpoch, userStakesWithVotingPower)
 const votingMultiplier = computed(() => {
     if (votingMultiplierData.data.value === undefined) {
         return undefined
@@ -167,9 +167,6 @@ const nextUnlockAt = computed(() => {
         }
     }
 
-    console.log('lowestRemainingEpochsForUnlock')
-    console.log(lowestRemainingEpochsForUnlock)
-
     if (lowestRemainingEpochsForUnlock === undefined) {
         return undefined
     }
@@ -182,9 +179,6 @@ const nextUnlockFormatted = computed(() => {
         return undefined
     }
 
-    console.log('nextUnlockAt')
-    console.log(nextUnlockAt.value)
-
     return formatSeconds(nextUnlockAt.value)
 })
 </script>
@@ -196,6 +190,7 @@ const nextUnlockFormatted = computed(() => {
     &__header-summary {
         display: flex;
         justify-content: space-between;
+        margin-bottom: 2.5rem;
     }
 
     &__box-subtitle {

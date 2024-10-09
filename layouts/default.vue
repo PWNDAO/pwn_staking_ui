@@ -1,14 +1,16 @@
 <template>
-    <div class="default-layout">
-        <Header />
-        <div class="default-layout__page-content">
-            <div v-if="!isConnected" class="default-layout__connect-wallet-wrapper">
-                <h2 class="default-layout__connect-wallet-text">Connect your wallet to manage your PWN Stake</h2>
-                <div class="default-layout__connect-wallet-btn" @click="openAppKitModal">Connect Wallet</div>
+    <ClientOnly>
+        <div class="default-layout">
+            <Header />
+            <div class="default-layout__page-content">
+                    <div v-if="!isConnected" class="default-layout__connect-wallet-wrapper">
+                        <h2 class="default-layout__connect-wallet-text">Connect your wallet to manage your PWN Stake</h2>
+                        <div class="default-layout__connect-wallet-btn" @click="openAppKitModal">Connect Wallet</div>
+                    </div>
+                    <slot v-else />
             </div>
-            <slot v-else />
         </div>
-    </div>
+    </ClientOnly>
 </template>
 
 <script setup lang="ts">
