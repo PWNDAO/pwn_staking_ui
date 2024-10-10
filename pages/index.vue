@@ -1,12 +1,18 @@
 <template>
     <div class="homepage">
+        <div class="homepage__epoch-input">
+            <div>Real epoch in contract: {{ currentEpoch }}</div>
+            <div>Manually set epoch: <input v-if="epoch !== undefined" type="number" :value="epoch" @input="event => setEpoch(event.target!.value!)" /></div>
+        </div>
+
         <div class="homepage__header-summary">
             <div class="homepage__pwn-balance">
                 <div class="homepage__box-subtitle">
                     PWN Token Balance in Wallet 
                 </div>
 
-                <div class="homepage__pwn-balance-value">
+                <BaseSkeletor v-if="isFetchingPwnTokenBalance" height="20" />
+                <div class="homepage__pwn-balance-value" v-else>
                     {{ pwnTokenBalanceFormatted }} $PWN
                 </div>
             </div>
@@ -15,14 +21,16 @@
                     <div class="homepage__box-subtitle">
                         Staked Tokens
                     </div>
-                    <div class="homepage__box-value">{{ stakedTokensFormatted }}</div>
+                    <BaseSkeletor v-if="isFetchingUserStakes" height="14" />
+                    <div v-else class="homepage__box-value">{{ stakedTokensFormatted }}</div>
                 </div>
 
                 <div class="homepage__summary-box">
                     <div class="homepage__box-subtitle">
                         Voting Power
                     </div>
-                    <div class="homepage__box-value">{{ votingPowerFormatted }}</div>
+                    <BaseSkeletor v-if="isFetchingVotingPower" height="14" />
+                    <div v-else class="homepage__box-value">{{ votingPowerFormatted }}</div>
                 </div>
 
                 <template v-if="hasAnyStake">
@@ -30,7 +38,8 @@
                         <div class="homepage__box-subtitle">
                             Voting Multiplier
                         </div>
-                        <div class="homepage__box-value">{{ votingMultiplier }}</div>
+                        <BaseSkeletor v-if="isFetchingUserStakesWithVotingPower" height="14" />
+                        <div v-else class="homepage__box-value">{{ votingMultiplierFormatted }}</div>
                     </div>
 
                     <div class="homepage__summary-box">
@@ -49,6 +58,9 @@
             <h3 class="homepage__positions-heading">Positions ({{ stakesCount }})</h3>
             <TablePositions />
         </div>
+        <div v-else-if="isFetchingUserStakes">
+            <BaseSkeletor height="100" />
+        </div>
     </div>
 </template>
 
@@ -57,11 +69,28 @@ import { useAccount } from '@wagmi/vue';
 import { formatUnits } from 'viem';
 import { SECONDS_IN_EPOCH } from '~/constants/contracts';
 import { useUserStakesWithVotingPower } from '~/utils/hooks';
+import { calculateUserVotingMultiplier } from '~/utils/parsing';
 
 const { address } = useAccount()
 
-const pwnTokenBalanceData = useUserPwnBalance(address)
-const pwnTokenBalance = computed(() => pwnTokenBalanceData?.data?.value)
+const { epoch, setEpoch } = useManuallySetEpoch()
+const epochBigInt = computed(() => {
+    if (epoch.value === undefined) {
+        return undefined
+    }
+
+    return BigInt(epoch.value)
+})
+watch(epoch, (newEpoch,oldEpoch) => {
+    console.log('newEpoch')
+    console.log(newEpoch)
+
+    console.log('oldEpoch')
+    console.log(oldEpoch)
+})
+
+const pwnTokenBalanceQuery = useUserPwnBalance(address)
+const pwnTokenBalance = computed(() => pwnTokenBalanceQuery?.data?.value)
 const pwnTokenBalanceFormatted = computed(() => {
     if (pwnTokenBalance.value === undefined) { 
         return undefined
@@ -69,6 +98,7 @@ const pwnTokenBalanceFormatted = computed(() => {
 
     return formatUnits(pwnTokenBalance.value, 18)
 })
+const isFetchingPwnTokenBalance = computed(() => pwnTokenBalanceQuery.isLoading.value)
 
 const stakes = useUserStakes(address)
 const stakesCount = computed(() => stakes.data.value?.length ?? 0)
@@ -89,24 +119,25 @@ const stakedTokensFormatted = computed(() => {
 
     return formatUnits(stakedTokens.value, 18)
 })
+const isFetchingUserStakes = computed(() => stakes.isLoading.value)
 
-const currentEpochData = useCurrentEpoch()
+const currentEpochQuery = useCurrentEpoch()
 const currentEpoch = computed(() => {
-    if (currentEpochData.data?.value === undefined) {
+    if (currentEpochQuery.data?.value === undefined) {
         return undefined
     }
 
     // TODO remove this 1n, only for testing
-    return BigInt(currentEpochData.data.value) + 1n
+    return BigInt(currentEpochQuery.data.value)
 })
 
-const initialEpochTimestampData = useInitialEpochTimestamp()
+const initialEpochTimestampQuery = useInitialEpochTimestamp()
 const initialEpochTimestamp = computed(() => {
-    if (initialEpochTimestampData.data.value === undefined) {
+    if (initialEpochTimestampQuery.data.value === undefined) {
         return undefined
     }
 
-    return Number(initialEpochTimestampData.data.value)
+    return Number(initialEpochTimestampQuery.data.value)
 })
 
 const secondsTillNextEpoch = computed(() => {
@@ -119,8 +150,8 @@ const secondsTillNextEpoch = computed(() => {
 })
 
 // TODO check if this returns correct data
-const votingPowerData = useUserVotingPower(address, currentEpoch)
-const votingPower = computed(() => votingPowerData.data?.value)
+const votingPowerQuery = useUserVotingPower(address, epochBigInt)
+const votingPower = computed(() => votingPowerQuery.data?.value)
 const votingPowerFormatted = computed(() => {
     if (votingPower.value === undefined) {
         return undefined
@@ -128,25 +159,26 @@ const votingPowerFormatted = computed(() => {
     
     return formatUnits(votingPower.value, 18)
 })
+const isFetchingVotingPower = computed(() => votingPowerQuery.isLoading.value)
 
-const currentEpochNumber = computed(() => {
-    if (currentEpoch.value === undefined) {
+const userStakesWithVotingPowerQuery = useUserStakesWithVotingPower(address, epoch)
+const userStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.data.value)
+const isFetchingUserStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.isLoading.value)
+
+const votingMultiplier = computed(() => {
+    if (userStakesWithVotingPower.value === undefined) {
         return undefined
     }
 
-    return Number(currentEpoch.value)
+    return calculateUserVotingMultiplier(epoch.value!, userStakesWithVotingPower.value)
 })
-const userStakesWithVotingPowerQuery = useUserStakesWithVotingPower(address, currentEpochNumber)
-const userStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.data.value)
-
-const votingMultiplierData = useUserVotingMultiplier(currentEpoch, userStakesWithVotingPower)
-const votingMultiplier = computed(() => {
-    if (votingMultiplierData.data.value === undefined) {
+const votingMultiplierFormatted = computed(() => {
+    if (votingMultiplier.value === undefined) {
         return undefined
     }
 
     // floor to 3 decimal places
-    return Math.floor(votingMultiplierData.data.value * 1000) / 1000
+    return Math.floor(votingMultiplier.value * 1000) / 1000
 })
 
 // TODO rename?
@@ -154,15 +186,15 @@ const votingMultiplier = computed(() => {
 const nextUnlockAt = computed(() => {
     // TODO check here also currentEpoch or not?
     // TODO check here also secondsTillNextEpoch or not?
-    if (stakes.data.value === undefined || currentEpoch.value === undefined || secondsTillNextEpoch.value === undefined) {
+    if (stakes.data.value === undefined || epoch.value === undefined || secondsTillNextEpoch.value === undefined) {
         return undefined
     }
 
     let lowestRemainingEpochsForUnlock: number | undefined = undefined
     for (const stake of stakes.data.value) {
         const epochWhereUnlocked = stake.initialEpoch + stake.lockUpEpochs
-        const remainingEpochs = epochWhereUnlocked - Number(currentEpoch.value)
-        if (epochWhereUnlocked > Number(currentEpoch.value) && (lowestRemainingEpochsForUnlock === undefined || remainingEpochs < lowestRemainingEpochsForUnlock)) {
+        const remainingEpochs = epochWhereUnlocked - Number(epoch.value)
+        if (epochWhereUnlocked > Number(epoch.value) && (lowestRemainingEpochsForUnlock === undefined || remainingEpochs < lowestRemainingEpochsForUnlock)) {
             lowestRemainingEpochsForUnlock = remainingEpochs
         }
     }
@@ -186,6 +218,15 @@ const nextUnlockFormatted = computed(() => {
 <style scoped>
 .homepage {
     padding: 2.5rem 1rem;
+
+    &__epoch-input {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        align-items: center;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
 
     &__header-summary {
         display: flex;

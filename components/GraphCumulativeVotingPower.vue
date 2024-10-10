@@ -1,12 +1,14 @@
 <template>
-    <div class="graph-cumulative-voting-power">
+    <BaseSkeletor v-if="isFetchingUserCumulativeVotingPower || isFetchingUserStakesWithVotingPower" height="340"/>
+    <div v-else-if="parsedDataForGraph" class="graph-cumulative-voting-power">
         <div class="graph-cumulative-voting-power__heading">
             <span>Cumulative Voting Power</span>
             <span v-if="timeTillNextEpoch !== undefined">Time Till Next Epoch: {{ timeTillNextEpoch }}</span>
         </div>
 
-        <Line v-if="parsedDataForGraph" :data="parsedDataForGraph" :options="chartOptions" />
+        <Line :data="parsedDataForGraph" :options="chartOptions" />
     </div>
+    
 </template>
 
 <script setup lang="ts">
@@ -41,13 +43,25 @@ ChartJS.register(
 ChartJS.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--text-color');
 
 const { address } = useAccount()
+
+const { epoch } = useManuallySetEpoch()
+const epochForGraph = computed(() => {
+    if (epoch.value === undefined) {
+        return undefined
+    }
+
+    // TODO add currentEpoch - 2
+    return Math.max(1, epoch.value)
+})
+
+/*
 const currentEpochQuery = useCurrentEpoch()
 const currentEpoch = computed(() => {
     if (currentEpochQuery.data.value === undefined) {
         return undefined
     }
 
-    return currentEpochQuery.data.value + 1
+    return currentEpochQuery.data.value
 })
 
 const epochForGraph = computed(() => {
@@ -58,12 +72,15 @@ const epochForGraph = computed(() => {
     // TODO add currentEpoch - 2
     return Math.max(1, currentEpoch.value)
 })
+*/
 
 const userStakesWithVotingPowerQuery = useUserStakesWithVotingPower(address, epochForGraph)
 const userStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.data.value)
+const isFetchingUserStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.isLoading.value)
 
 const userCumulativeVotingPowerQuery = useUserCumulativeVotingPowerSummary(userStakesWithVotingPower)
 const userCumulativeVotingPower = computed(() => userCumulativeVotingPowerQuery.data.value)
+const isFetchingUserCumulativeVotingPower = computed(() => userCumulativeVotingPowerQuery.isLoading.value)
 
 const parsedUserCumulativeVotingPower = computed(() => {
     if (!userCumulativeVotingPower.value?.length) {

@@ -31,7 +31,8 @@ import { SECONDS_IN_EPOCH } from '~/constants/contracts';
 const { address } = useAccount()
 
 const stakes = useUserStakes(address)
-const currentEpoch = useCurrentEpoch()
+const { epoch } = useManuallySetEpoch()
+// const currentEpoch = useCurrentEpoch()
 const initialEpochTimestamp = useInitialEpochTimestamp()
 
 const secondsTillNextEpoch = computed(() => {
@@ -53,12 +54,12 @@ interface TableRowData {
 }
 
 const tableRowsData = computed<TableRowData[]>(() => {
-    if (stakes.data.value === undefined || currentEpoch.data.value === undefined || initialEpochTimestamp.data.value === undefined || secondsTillNextEpoch.value === undefined) {
+    if (stakes.data.value === undefined || epoch.value === undefined || initialEpochTimestamp.data.value === undefined || secondsTillNextEpoch.value === undefined) {
         return []
     }
 
     return stakes.data.value.map(stake => {
-        const remainingEpochsForUnlock = stake.initialEpoch + stake.lockUpEpochs - Number(currentEpoch.data.value)
+        const remainingEpochsForUnlock = stake.initialEpoch + stake.lockUpEpochs - Number(epoch.value)
         const multiplier = getMultiplierForLockUpEpochs(remainingEpochsForUnlock)
         const formattedStakedAmount = formatUnits(stake.amount, 18)
 

@@ -8477,6 +8477,7 @@ __metadata:
     vue: ">=3.4.21"
     vue-chartjs: ^5.3.1
     vue-router: ^4.3.2
+    vue-skeletor: ^1.0.6
     wagmi: ^2.12.16
   languageName: unknown
   linkType: soft
@@ -10304,6 +10305,13 @@ __metadata:
   peerDependencies:
     vue: ^3.2.0
   checksum: 1c3119a4fd192d0220d052b78a46215f9c8666a8088e90aac29f400ea2e13ea3fe0b1079ebf98ebdf667cb17860321e1e2c0ebbe126d85df18d9d97d8e20b87b
+  languageName: node
+  linkType: hard
+
+"vue-skeletor@npm:^1.0.6":
+  version: 1.0.6
+  resolution: "vue-skeletor@npm:1.0.6"
+  checksum: a630c7748bb6afa3a4dc1c997c575f5a3fbec10cb8f492fb0b0380fe38fb13f14771bff056f182270c9e7a046d27f44f4130af8711b58bb8fd1990b9afd1f345
   languageName: node
   linkType: hard
 

@@ -25,6 +25,7 @@
     "vue": ">=3.4.21",
     "vue-chartjs": "^5.3.1",
     "vue-router": "^4.3.2",
+    "vue-skeletor": "^1.0.6",
     "wagmi": "^2.12.16"
   },
   "devDependencies": {

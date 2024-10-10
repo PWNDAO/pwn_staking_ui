@@ -2,7 +2,8 @@
     /* === THEME COLORS === */
     --background-color: #111111;
     --content-background-color: #171717;
-    --primary-color: #00FFE0;
+    --primary-color-base: 0 255 224; /* #00FFE0 */
+    --primary-color: rgb(var(--primary-color-base));
     --primary-color-darker: #0F2926;
     --text-color: #F3F1FF;
     --border-color: #434343;

@@ -10,7 +10,7 @@
             <a class="header__menu-item" href="https://app.pwn.xyz" target="_blank">App</a>
         </div>
 
-        <div class="header__connect-wallet" @click="handleWalletClick">
+        <div class="header__connect-wallet" @click="handleWalletClick" @mouseenter="isHoveredOverWallet = true" @mouseleave="isHoveredOverWallet = false">
             <SvgoWalletIcon alt="Wallet" width="16" height="16" />
             <span class="header__connect-wallet-text">{{ walletText }}</span>
         </div>
@@ -24,7 +24,15 @@ import { wagmiAdapter } from '~/wagmi';
 
 const { isConnected, address } = useAccount()
 
-const walletText = computed(() => isConnected.value && address.value ? shortenAddress(address.value) : 'Connect')
+const isHoveredOverWallet = ref(false)
+
+const walletText = computed(() => {
+    if (isConnected.value && address.value) {
+        return isHoveredOverWallet.value ? 'Disconnect' : shortenAddress(address.value)
+    }
+    
+    return 'Connect'
+})
 
 const handleWalletClick = async () => {
     if (isConnected.value) {
