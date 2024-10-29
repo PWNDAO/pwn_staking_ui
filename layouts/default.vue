@@ -15,6 +15,7 @@
 
 <script setup lang="ts">
 import { useAccount } from '@wagmi/vue';
+import { openAppKitModal } from '@/utils/web3'
 
 const { isConnected } = useAccount()
 </script>

@@ -17,6 +17,8 @@ export default defineNuxtPlugin((nuxtApp) => {
               // override the default JSON.stringify fn to allow also BigInt in the queryKey
               return serialize(queryKey)
             },
+            refetchOnWindowFocus: false,
+            staleTime: 60 * 5 * 1000, // 5 minutes
           }
         }
       }

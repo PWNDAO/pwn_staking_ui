@@ -13,24 +13,27 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@reown/appkit": "^1.0.6",
-    "@reown/appkit-adapter-wagmi": "^1.0.6",
-    "@tanstack/vue-query": ">=5.45.0",
+    "@reown/appkit": "^1.1.8",
+    "@reown/appkit-adapter-wagmi": "^1.1.8",
+    "@tanstack/vue-query": "^5.59.16",
     "@vueuse/core": "^11.1.0",
-    "@wagmi/vue": "latest",
-    "chart.js": "^4.4.4",
-    "nuxt": "^3.11.2",
-    "nuxt-svgo": "latest",
-    "viem": "^2.21.16",
-    "vue": ">=3.4.21",
+    "@wagmi/vue": "^0.0.56",
+    "chart.js": "^4.4.5",
+    "nuxt": "^3.13.2",
+    "nuxt-svgo": "^4.0.6",
+    "viem": "^2.21.35",
+    "vue": "^3.5.12",
     "vue-chartjs": "^5.3.1",
-    "vue-router": "^4.3.2",
+    "vue-router": "^4.4.5",
     "vue-skeletor": "^1.0.6",
-    "wagmi": "^2.12.16"
+    "vue-tippy": "^6.5.0",
+    "wagmi": "^2.12.25"
   },
   "devDependencies": {
     "postcss": "^8.4.47",
-    "postcss-nested": "^6.2.0"
+    "postcss-nested": "^6.2.0",
+    "typescript": "^5.6.3",
+    "vue-tsc": "^2.1.8"
   },
   "packageManager": "yarn@3.3.1"
 }

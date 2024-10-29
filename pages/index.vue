@@ -2,7 +2,7 @@
     <div class="homepage">
         <div class="homepage__epoch-input">
             <div>Real epoch in contract: {{ currentEpoch }}</div>
-            <div>Manually set epoch: <input v-if="epoch !== undefined" type="number" :value="epoch" @input="event => setEpoch(event.target!.value!)" /></div>
+            <div>Manually set epoch: <input v-if="epoch !== undefined" type="number" :value="epoch" @input="event => setEpoch((event.target as HTMLInputElement).value)" /></div>
         </div>
 
         <div class="homepage__header-summary">
@@ -33,22 +33,20 @@
                     <div v-else class="homepage__box-value">{{ votingPowerFormatted }}</div>
                 </div>
 
-                <template v-if="hasAnyStake">
-                    <div class="homepage__summary-box">
-                        <div class="homepage__box-subtitle">
-                            Voting Multiplier
-                        </div>
-                        <BaseSkeletor v-if="isFetchingUserStakesWithVotingPower" height="14" />
-                        <div v-else class="homepage__box-value">{{ votingMultiplierFormatted }}</div>
+                <div v-if="votingMultiplier !== undefined" class="homepage__summary-box">
+                    <div class="homepage__box-subtitle">
+                        Voting Multiplier
                     </div>
+                    <BaseSkeletor v-if="isFetchingUserStakesWithVotingPower" height="14" />
+                    <div v-else class="homepage__box-value">{{ votingMultiplierFormatted }}</div>
+                </div>
 
-                    <div class="homepage__summary-box">
-                        <div class="homepage__box-subtitle">
-                            Time till next unlock
-                        </div>
-                        <div class="homepage__box-value">{{ nextUnlockFormatted }}</div>
+                <div v-if="hasAnyStake" class="homepage__summary-box">
+                    <div class="homepage__box-subtitle">
+                        Time till next unlock
                     </div>
-                </template>
+                    <div class="homepage__box-value">{{ nextUnlockFormatted }}</div>
+                </div>
             </div>
         </div>
 
@@ -81,13 +79,6 @@ const epochBigInt = computed(() => {
 
     return BigInt(epoch.value)
 })
-watch(epoch, (newEpoch,oldEpoch) => {
-    console.log('newEpoch')
-    console.log(newEpoch)
-
-    console.log('oldEpoch')
-    console.log(oldEpoch)
-})
 
 const pwnTokenBalanceQuery = useUserPwnBalance(address)
 const pwnTokenBalance = computed(() => pwnTokenBalanceQuery?.data?.value)
@@ -114,7 +105,7 @@ const stakedTokens = computed(() => {
 })
 const stakedTokensFormatted = computed(() => {
     if (stakedTokens.value === undefined) {
-        return undefined
+        return '0'
     }
 
     return formatUnits(stakedTokens.value, 18)
@@ -127,7 +118,6 @@ const currentEpoch = computed(() => {
         return undefined
     }
 
-    // TODO remove this 1n, only for testing
     return BigInt(currentEpochQuery.data.value)
 })
 
@@ -149,7 +139,6 @@ const secondsTillNextEpoch = computed(() => {
     return (initialEpochTimestamp.value - currentTimestamp) % SECONDS_IN_EPOCH
 })
 
-// TODO check if this returns correct data
 const votingPowerQuery = useUserVotingPower(address, epochBigInt)
 const votingPower = computed(() => votingPowerQuery.data?.value)
 const votingPowerFormatted = computed(() => {
@@ -166,11 +155,11 @@ const userStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.
 const isFetchingUserStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.isLoading.value)
 
 const votingMultiplier = computed(() => {
-    if (userStakesWithVotingPower.value === undefined) {
+    if (epoch.value === undefined || !userStakesWithVotingPower.value?.length) {
         return undefined
     }
 
-    return calculateUserVotingMultiplier(epoch.value!, userStakesWithVotingPower.value)
+    return calculateUserVotingMultiplier(epoch.value, userStakesWithVotingPower.value)
 })
 const votingMultiplierFormatted = computed(() => {
     if (votingMultiplier.value === undefined) {
@@ -181,11 +170,7 @@ const votingMultiplierFormatted = computed(() => {
     return Math.floor(votingMultiplier.value * 1000) / 1000
 })
 
-// TODO rename?
-// TODO check if the returned value is correct
 const nextUnlockAt = computed(() => {
-    // TODO check here also currentEpoch or not?
-    // TODO check here also secondsTillNextEpoch or not?
     if (stakes.data.value === undefined || epoch.value === undefined || secondsTillNextEpoch.value === undefined) {
         return undefined
     }

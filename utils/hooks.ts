@@ -5,7 +5,7 @@ import { getLogs } from "viem/actions";
 import { getClient, readContract, readContracts } from "wagmi/actions";
 import { EPOCH_CLOCK_ABI, VE_PWN_TOKEN_ABI } from "~/constants/abis";
 import { EPOCH_CLOCK, PWN_TOKEN, STAKED_PWN_NFT, VE_PWN_TOKEN } from "~/constants/addresses";
-import type { PowerInEpoch } from "~/types/contractResults";
+import type { PowerInEpoch, StakeDetail } from "~/types/contractResults";
 import { ACTIVE_CHAIN, wagmiAdapter } from "~/wagmi";
 
 export const useUserPwnBalance = (walletAddress: Ref<Address | undefined>) => {
@@ -25,7 +25,7 @@ export const useUserStakes = (walletAddress: Ref<Address | undefined>) => {
         // TODO remove throwOnError: true or keep it?
         throwOnError: true,
         queryKey: ['stakedPwnBalance', walletAddress],
-        queryFn: async (): Promise<StakeDetail[]> => {
+        queryFn: async (): Promise<Readonly<StakeDetail[]>> => {
             const client = getClient(wagmiAdapter.wagmiConfig)
             const receivedStPwnNfts = await getLogs(client!, {
                 address: STAKED_PWN_NFT[ACTIVE_CHAIN],
@@ -72,25 +72,18 @@ export const useManuallySetEpoch = () => {
     const currentEpoch = useCurrentEpoch()
 
     if (_manuallySetEpoch.value === 0) {
-        console.log("here")
         const unwatch = watch(() => currentEpoch.data.value, (newCurrentEpoch, oldCurrentEpoch) => {
-            console.log('inside watcher')
-            console.log(newCurrentEpoch)
             if (newCurrentEpoch !== undefined) {
                 _manuallySetEpoch.value = Number(newCurrentEpoch)
                 unwatch()
             }
-            console.log('_manuallySetEpoch')
-            console.log(_manuallySetEpoch.value)
         }, { immediate: true })
     }
 
     return {
         epoch: _manuallySetEpoch,
-        setEpoch(newEpoch: number) {
-            console.log('inside setEpoch')
-            console.log(`newEpoch: ${newEpoch}, oldEpoch: ${_manuallySetEpoch.value}`)
-            _manuallySetEpoch.value = newEpoch
+        setEpoch(newEpoch: number | string) {
+            _manuallySetEpoch.value = Number(newEpoch)
         }
     }
 }
@@ -120,7 +113,7 @@ export const useUserStakesWithVotingPower = (walletAddress: Ref<Address | undefi
     return useQuery({
         queryKey: ['userStakesWithVotingPower', walletAddress, currentEpoch],
         enabled: computed(() => walletAddress.value !== undefined && currentEpoch.value !== undefined),
-        queryFn: async (): Promise<StakeDetail[]> => {
+        queryFn: async (): Promise<Readonly<StakeDetail[]>> => {
             const stakeIdsWhereBeneficiary = await readContract(wagmiAdapter.wagmiConfig, {
                 abi: VE_PWN_TOKEN_ABI,
                 address: VE_PWN_TOKEN[ACTIVE_CHAIN]!,
@@ -133,20 +126,35 @@ export const useUserStakesWithVotingPower = (walletAddress: Ref<Address | undefi
     })
 }
 
-export const useUserCumulativeVotingPowerSummary = (stakesWithVotingPower: Ref<StakeDetail[] | undefined>) => {
+export const useUserCumulativeVotingPowerSummary = (walletAddress: Ref<Address | undefined>, epochs: Ref<bigint[] | undefined>) => {
     return useQuery({
-        queryKey: ['cumulativeVotingPower', stakesWithVotingPower],
-        enabled: computed(() => !!stakesWithVotingPower.value?.length),
-        queryFn: async (): Promise<Array<PowerInEpoch[]>> => {
-            const allStakesPowers = await readContracts(wagmiAdapter.wagmiConfig, {
-                contracts: stakesWithVotingPower.value!.map(stake => ({
-                    address: VE_PWN_TOKEN[ACTIVE_CHAIN]!,
-                    abi: VE_PWN_TOKEN_ABI,
-                    functionName: 'stakePowers',
-                    args: [BigInt(stake.initialEpoch), stake.amount, BigInt(stake.lockUpEpochs)]
-                }))
+        queryKey: ['cumulativeVotingPower', walletAddress, epochs],
+        enabled: computed(() => !!walletAddress.value && !!epochs.value?.length),
+        queryFn: async (): Promise<PowerInEpoch[]> => {
+            const stakerPowers = await readContract(wagmiAdapter.wagmiConfig, {
+                address: VE_PWN_TOKEN[ACTIVE_CHAIN]!,
+                abi: VE_PWN_TOKEN_ABI,
+                functionName: 'stakerPowers',
+                args: [unref(walletAddress)!, unref(epochs)!]
             })
-            return allStakesPowers.map(result => result.result) as unknown as Array<PowerInEpoch[]>
+            const parsedStakerPowers = stakerPowers.map((power, index) => ({
+                epoch: epochs.value![index],
+                power,
+            }))
+
+            const strippedParsedStakerPowers = parsedStakerPowers.filter((stakerPower, index) => {
+                // Keep the number if it's not zero
+                if (stakerPower.power !== 0n) return true;
+                
+                // If it's zero, check if there's a non-zero number ahead
+                return parsedStakerPowers.slice(index + 1).some(_stakerPower => _stakerPower.power !== 0n);
+            });
+
+            const lastEpochWithPower = strippedParsedStakerPowers[strippedParsedStakerPowers.length - 1]
+            // add 2 epochs with 0 power at the end results
+            strippedParsedStakerPowers.push({ epoch: lastEpochWithPower.epoch + 1n, power: 0n })
+            strippedParsedStakerPowers.push({ epoch: lastEpochWithPower.epoch + 2n, power: 0n })
+            return strippedParsedStakerPowers
         }
     })
 }

@@ -1,724 +1,771 @@
+// TODO keep in this ABIs only the functions that we use to reduce the size?
 export const PWN_TOKEN_ABI = [
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_owner",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "constructor"
-    },
-    {
-      "inputs": [],
-      "type": "error",
-      "name": "CallerHasNotVoted"
-    },
-    {
-      "inputs": [],
-      "type": "error",
-      "name": "DecreaseAllowanceNotSupported"
-    },
-    {
-      "inputs": [],
-      "type": "error",
-      "name": "IncreaseAllowanceNotSupported"
-    },
-    {
-      "inputs": [],
-      "type": "error",
-      "name": "InvalidVotingReward"
-    },
-    {
-      "inputs": [],
-      "type": "error",
-      "name": "MintableSupplyExceeded"
-    },
-    {
-      "inputs": [],
-      "type": "error",
-      "name": "ProposalNotExecuted"
-    },
-    {
-      "inputs": [],
-      "type": "error",
-      "name": "ProposalRewardAlreadyClaimed"
-    },
-    {
-      "inputs": [],
-      "type": "error",
-      "name": "ProposalRewardNotAssigned"
-    },
-    {
-      "inputs": [],
-      "type": "error",
-      "name": "TransfersAlreadyEnabled"
-    },
-    {
-      "inputs": [],
-      "type": "error",
-      "name": "TransfersDisabled"
-    },
-    {
-      "inputs": [],
-      "type": "error",
-      "name": "ZeroVotingContract"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "owner",
-          "type": "address",
-          "indexed": true
-        },
-        {
-          "internalType": "address",
-          "name": "spender",
-          "type": "address",
-          "indexed": true
-        },
-        {
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256",
-          "indexed": false
-        }
-      ],
-      "type": "event",
-      "name": "Approval",
-      "anonymous": false
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "previousOwner",
-          "type": "address",
-          "indexed": true
-        },
-        {
-          "internalType": "address",
-          "name": "newOwner",
-          "type": "address",
-          "indexed": true
-        }
-      ],
-      "type": "event",
-      "name": "OwnershipTransferStarted",
-      "anonymous": false
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "previousOwner",
-          "type": "address",
-          "indexed": true
-        },
-        {
-          "internalType": "address",
-          "name": "newOwner",
-          "type": "address",
-          "indexed": true
-        }
-      ],
-      "type": "event",
-      "name": "OwnershipTransferred",
-      "anonymous": false
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "votingContract",
-          "type": "address",
-          "indexed": true
-        },
-        {
-          "internalType": "uint256",
-          "name": "proposalId",
-          "type": "uint256",
-          "indexed": true
-        },
-        {
-          "internalType": "uint256",
-          "name": "reward",
-          "type": "uint256",
-          "indexed": false
-        }
-      ],
-      "type": "event",
-      "name": "ProposalRewardAssigned",
-      "anonymous": false
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "votingContract",
-          "type": "address",
-          "indexed": true
-        },
-        {
-          "internalType": "uint256",
-          "name": "proposalId",
-          "type": "uint256",
-          "indexed": true
-        },
-        {
-          "internalType": "address",
-          "name": "voter",
-          "type": "address",
-          "indexed": true
-        },
-        {
-          "internalType": "uint256",
-          "name": "voterReward",
-          "type": "uint256",
-          "indexed": false
-        }
-      ],
-      "type": "event",
-      "name": "ProposalRewardClaimed",
-      "anonymous": false
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "from",
-          "type": "address",
-          "indexed": true
-        },
-        {
-          "internalType": "address",
-          "name": "to",
-          "type": "address",
-          "indexed": true
-        },
-        {
-          "internalType": "uint256",
-          "name": "value",
-          "type": "uint256",
-          "indexed": false
-        }
-      ],
-      "type": "event",
-      "name": "Transfer",
-      "anonymous": false
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "votingContract",
-          "type": "address",
-          "indexed": true
-        },
-        {
-          "internalType": "uint256",
-          "name": "votingReward",
-          "type": "uint256",
-          "indexed": false
-        }
-      ],
-      "type": "event",
-      "name": "VotingRewardSet",
-      "anonymous": false
-    },
-    {
-      "inputs": [],
-      "stateMutability": "view",
-      "type": "function",
-      "name": "MAX_VOTING_REWARD",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ]
-    },
-    {
-      "inputs": [],
-      "stateMutability": "view",
-      "type": "function",
-      "name": "MINTABLE_TOTAL_SUPPLY",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ]
-    },
-    {
-      "inputs": [],
-      "stateMutability": "view",
-      "type": "function",
-      "name": "VOTING_REWARD_DENOMINATOR",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ]
-    },
-    {
-      "inputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function",
-      "name": "acceptOwnership"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "owner",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "spender",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function",
-      "name": "allowance",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ]
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "spender",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function",
-      "name": "approve",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ]
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "proposalId",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function",
-      "name": "assignProposalReward"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function",
-      "name": "balanceOf",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ]
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function",
-      "name": "burn"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "votingContract",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "proposalId",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function",
-      "name": "claimProposalReward"
-    },
-    {
-      "inputs": [],
-      "stateMutability": "view",
-      "type": "function",
-      "name": "decimals",
-      "outputs": [
-        {
-          "internalType": "uint8",
-          "name": "",
-          "type": "uint8"
-        }
-      ]
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "pure",
-      "type": "function",
-      "name": "decreaseAllowance",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ]
-    },
-    {
-      "inputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function",
-      "name": "enableTransfers"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "pure",
-      "type": "function",
-      "name": "increaseAllowance",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ]
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function",
-      "name": "mint"
-    },
-    {
-      "inputs": [],
-      "stateMutability": "view",
-      "type": "function",
-      "name": "mintedSupply",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ]
-    },
-    {
-      "inputs": [],
-      "stateMutability": "view",
-      "type": "function",
-      "name": "name",
-      "outputs": [
-        {
-          "internalType": "string",
-          "name": "",
-          "type": "string"
-        }
-      ]
-    },
-    {
-      "inputs": [],
-      "stateMutability": "view",
-      "type": "function",
-      "name": "owner",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ]
-    },
-    {
-      "inputs": [],
-      "stateMutability": "view",
-      "type": "function",
-      "name": "pendingOwner",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ]
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "votingContract",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "proposalId",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function",
-      "name": "proposalRewards",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "reward",
-          "type": "uint256"
-        }
-      ]
-    },
-    {
-      "inputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function",
-      "name": "renounceOwnership"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "addr",
-          "type": "address"
-        },
-        {
-          "internalType": "bool",
-          "name": "isAllowed",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function",
-      "name": "setTransferAllowlist"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "votingContract",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "votingReward",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function",
-      "name": "setVotingReward"
-    },
-    {
-      "inputs": [],
-      "stateMutability": "view",
-      "type": "function",
-      "name": "symbol",
-      "outputs": [
-        {
-          "internalType": "string",
-          "name": "",
-          "type": "string"
-        }
-      ]
-    },
-    {
-      "inputs": [],
-      "stateMutability": "view",
-      "type": "function",
-      "name": "totalSupply",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ]
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "to",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function",
-      "name": "transfer",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ]
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "addr",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function",
-      "name": "transferAllowlist",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "allowed",
-          "type": "bool"
-        }
-      ]
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "from",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "to",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function",
-      "name": "transferFrom",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ]
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "newOwner",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function",
-      "name": "transferOwnership"
-    },
-    {
-      "inputs": [],
-      "stateMutability": "view",
-      "type": "function",
-      "name": "transfersEnabled",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ]
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "votingContract",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function",
-      "name": "votingRewards",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "reward",
-          "type": "uint256"
-        }
-      ]
-    }
-  ] as const
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_owner",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "CallerHasNotVoted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DecreaseAllowanceNotSupported",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "IncreaseAllowanceNotSupported",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidVotingReward",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "MintableSupplyExceeded",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "proposalId",
+        "type": "uint256"
+      }
+    ],
+    "name": "ProposalNotExecuted",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "proposalId",
+        "type": "uint256"
+      }
+    ],
+    "name": "ProposalRewardAlreadyClaimed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "proposalId",
+        "type": "uint256"
+      }
+    ],
+    "name": "ProposalRewardNotAssigned",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TransfersAlreadyEnabled",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TransfersDisabled",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroVotingContract",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "Approval",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferStarted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "votingContract",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "proposalId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "reward",
+        "type": "uint256"
+      }
+    ],
+    "name": "ProposalRewardAssigned",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "votingContract",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "proposalId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "voter",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "voterReward",
+        "type": "uint256"
+      }
+    ],
+    "name": "ProposalRewardClaimed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "Transfer",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "votingContract",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "votingReward",
+        "type": "uint256"
+      }
+    ],
+    "name": "VotingRewardSet",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_VOTING_REWARD",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MINTABLE_TOTAL_SUPPLY",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "VOTING_REWARD_DENOMINATOR",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "acceptOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      }
+    ],
+    "name": "allowance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "approve",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "proposalId",
+        "type": "uint256"
+      }
+    ],
+    "name": "assignProposalReward",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "burn",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "votingContract",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "proposalId",
+        "type": "uint256"
+      }
+    ],
+    "name": "claimProposalReward",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "votingContract",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "proposalIds",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "claimProposalRewardBatch",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "decreaseAllowance",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "enableTransfers",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "increaseAllowance",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "mint",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "mintedSupply",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "name",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pendingOwner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "votingContract",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "proposalId",
+        "type": "uint256"
+      }
+    ],
+    "name": "proposalRewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "reward",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "addr",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "isAllowed",
+        "type": "bool"
+      }
+    ],
+    "name": "setTransferAllowlist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "votingContract",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "votingReward",
+        "type": "uint256"
+      }
+    ],
+    "name": "setVotingReward",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "symbol",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalSupply",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "transfer",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "addr",
+        "type": "address"
+      }
+    ],
+    "name": "transferAllowlist",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "allowed",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "transferFrom",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "transfersEnabled",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "votingContract",
+        "type": "address"
+      }
+    ],
+    "name": "votingRewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "reward",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+] as const
 
 export const STAKED_PWN_NFT_ABI = [
   {
@@ -1143,6 +1190,24 @@ export const STAKED_PWN_NFT_ABI = [
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "addr",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "isAllowed",
+        "type": "bool"
+      }
+    ],
+    "name": "setTransferAllowlist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "supplyManager",
     "outputs": [
@@ -1201,6 +1266,25 @@ export const STAKED_PWN_NFT_ABI = [
         "internalType": "string",
         "name": "",
         "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "addr",
+        "type": "address"
+      }
+    ],
+    "name": "transferAllowlist",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "allowed",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -1270,11 +1354,6 @@ export const VE_PWN_TOKEN_ABI = [
   },
   {
     "inputs": [],
-    "name": "ClaimStakePowerFromSelf",
-    "type": "error"
-  },
-  {
-    "inputs": [],
     "name": "DelegateBySigDisabled",
     "type": "error"
   },
@@ -1305,11 +1384,6 @@ export const VE_PWN_TOKEN_ABI = [
   },
   {
     "inputs": [],
-    "name": "NotStakeBeneficiary",
-    "type": "error"
-  },
-  {
-    "inputs": [],
     "name": "NotStakeOwner",
     "type": "error"
   },
@@ -1327,6 +1401,22 @@ export const VE_PWN_TOKEN_ABI = [
       }
     ],
     "name": "PowerAlreadyCalculated",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SameBeneficiary",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "stakeId",
+        "type": "uint256"
+      }
+    ],
+    "name": "StakeNotFound",
     "type": "error"
   },
   {
@@ -1583,7 +1673,7 @@ export const VE_PWN_TOKEN_ABI = [
         "type": "address"
       }
     ],
-    "name": "StakePowerClaimed",
+    "name": "StakePowerDelegated",
     "type": "event"
   },
   {
@@ -1867,24 +1957,6 @@ export const VE_PWN_TOKEN_ABI = [
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "stakeId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "currentBeneficiary",
-        "type": "address"
-      }
-    ],
-    "name": "claimStakePower",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [],
     "name": "clock",
     "outputs": [
@@ -2022,6 +2094,29 @@ export const VE_PWN_TOKEN_ABI = [
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "stakeId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "currentBeneficiary",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "newBeneficiary",
+        "type": "address"
+      }
+    ],
+    "name": "delegateStakePower",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "",
         "type": "address"
@@ -2097,6 +2192,118 @@ export const VE_PWN_TOKEN_ABI = [
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "stakeId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getStake",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "stakeId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "owner",
+            "type": "address"
+          },
+          {
+            "internalType": "uint16",
+            "name": "initialEpoch",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint8",
+            "name": "lockUpEpochs",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "remainingEpochs",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "currentMultiplier",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint104",
+            "name": "amount",
+            "type": "uint104"
+          }
+        ],
+        "internalType": "struct VoteEscrowedPWNStake.StakeData",
+        "name": "stakeData",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "stakeIds",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "getStakes",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "stakeId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "owner",
+            "type": "address"
+          },
+          {
+            "internalType": "uint16",
+            "name": "initialEpoch",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint8",
+            "name": "lockUpEpochs",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "remainingEpochs",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "currentMultiplier",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint104",
+            "name": "amount",
+            "type": "uint104"
+          }
+        ],
+        "internalType": "struct VoteEscrowedPWNStake.StakeData[]",
+        "name": "stakeData",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "account",
         "type": "address"
@@ -2119,6 +2326,11 @@ export const VE_PWN_TOKEN_ABI = [
         "internalType": "uint256",
         "name": "stakeId",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "stakeBeneficiary",
+        "type": "address"
       },
       {
         "internalType": "uint256",
@@ -2199,9 +2411,19 @@ export const VE_PWN_TOKEN_ABI = [
         "type": "uint256"
       },
       {
+        "internalType": "address",
+        "name": "stakeBeneficiary1",
+        "type": "address"
+      },
+      {
         "internalType": "uint256",
         "name": "stakeId2",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "stakeBeneficiary2",
+        "type": "address"
       }
     ],
     "name": "mergeStakes",
@@ -2247,6 +2469,11 @@ export const VE_PWN_TOKEN_ABI = [
         "internalType": "uint256",
         "name": "stakeId",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "stakeBeneficiary",
+        "type": "address"
       },
       {
         "internalType": "uint256",
@@ -2392,35 +2619,6 @@ export const VE_PWN_TOKEN_ABI = [
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "stakeId",
-        "type": "uint256"
-      }
-    ],
-    "name": "stakes",
-    "outputs": [
-      {
-        "internalType": "uint16",
-        "name": "initialEpoch",
-        "type": "uint16"
-      },
-      {
-        "internalType": "uint8",
-        "name": "lockUpEpochs",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint104",
-        "name": "amount",
-        "type": "uint104"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [],
     "name": "symbol",
     "outputs": [
@@ -2543,6 +2741,11 @@ export const VE_PWN_TOKEN_ABI = [
         "internalType": "uint256",
         "name": "stakeId",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "stakeBeneficiary",
+        "type": "address"
       }
     ],
     "name": "withdrawStake",

@@ -13,10 +13,43 @@
             <tr class="table-positions__tr" v-for="stake in sortedTableRowsData">
                 <td class="table-positions__td">{{ stake.id }}</td>
                 <td class="table-positions__td">{{ stake.amount }}</td>
-                <td class="table-positions__td">{{ stake.votingPower }}</td>
-                <td class="table-positions__td">{{ stake.multiplier }}</td>
+                <td class="table-positions__td">
+                    <div v-if="stake.votePowerStartsInNextEpoch" class="table-positions__not-yet-voting-power-wrapper">
+                        <span class="table-positions__td-text--greyed">
+                            {{ stake.votingPower }}
+                        </span>
+                        <BaseTooltip 
+                            :tooltip-text="`You will gain your voting power in next epoch, which will be in ${timeTillNextEpoch}.`" 
+                            :border-color="TooltipBorderColor.Orange">
+                            <template #trigger>
+                                <img src="/icons/alert-icon-red.svg" alt="alert" class="table-positions__alert-icon" />
+                            </template>
+                        </BaseTooltip>
+                    </div>
+                    <template v-else>
+                        <!-- TODO any special view for case when stake is unlocked already? -->
+                        {{ stake.votingPower }}
+                    </template>
+                </td>
+                <td class="table-positions__td">
+                    <template v-if="stake.votePowerStartsInNextEpoch">
+                        <span class="table-positions__td-text--greyed">
+                            {{ stake.multiplier }}
+                        </span>
+                    </template>
+                    <template v-else>
+                        {{ stake.multiplier }}
+                    </template>
+                </td>
                 <td class="table-positions__td">{{ formatSeconds(stake.duration) }}</td>
-                <td class="table-positions__td">{{ formatSeconds(stake.unlocksIn) }}</td>
+                <td class="table-positions__td">
+                    <template class="table-positions__unlocked-text" v-if="stake.unlocksIn === 0">
+                        Unlocked!
+                    </template>
+                    <template v-else>
+                        {{ formatSeconds(stake.unlocksIn) }}
+                    </template>
+                </td>
             </tr>
         </tbody>
     </table>
@@ -27,21 +60,30 @@ import { useLocalStorage } from '@vueuse/core';
 import { useAccount } from '@wagmi/vue';
 import { formatUnits, parseUnits } from 'viem';
 import { SECONDS_IN_EPOCH } from '~/constants/contracts';
+import { formatSeconds } from '@/utils/date';
+import { TooltipBorderColor } from './BaseTooltip.vue';
 
 const { address } = useAccount()
 
 const stakes = useUserStakes(address)
-const { epoch } = useManuallySetEpoch()
-// const currentEpoch = useCurrentEpoch()
-const initialEpochTimestamp = useInitialEpochTimestamp()
 
-const secondsTillNextEpoch = computed(() => {
-    if (initialEpochTimestamp.data.value === undefined) {
+const initialEpochTimestampQuery = useInitialEpochTimestamp()
+const initialEpochTimestamp = computed(() => initialEpochTimestampQuery.data.value)
+
+const timeTillNextEpoch = computed(() => {
+    if (initialEpochTimestamp.value === undefined) {
         return undefined
     }
 
-    const currentTimestamp = Math.floor(Date.now() / 1000)
-    return (Number(initialEpochTimestamp.data.value) - currentTimestamp) % SECONDS_IN_EPOCH
+    return getTimeTillNextEpochStringified(Number(initialEpochTimestamp.value))
+})
+
+const secondsTillNextEpoch = computed(() => {
+    if (initialEpochTimestamp.value === undefined) {
+        return undefined
+    }
+
+    return getSecondsTillNextEpoch(Number(initialEpochTimestamp.value))
 })
 
 interface TableRowData {
@@ -51,25 +93,27 @@ interface TableRowData {
     multiplier: number // e.g. x1.3
     duration: number // e.g. 3y
     unlocksIn: number // e.g. 1y 79d 12h
+    votePowerStartsInNextEpoch: boolean
 }
 
 const tableRowsData = computed<TableRowData[]>(() => {
-    if (stakes.data.value === undefined || epoch.value === undefined || initialEpochTimestamp.data.value === undefined || secondsTillNextEpoch.value === undefined) {
+    if (stakes.data.value === undefined || secondsTillNextEpoch.value === undefined) {
         return []
     }
 
     return stakes.data.value.map(stake => {
-        const remainingEpochsForUnlock = stake.initialEpoch + stake.lockUpEpochs - Number(epoch.value)
-        const multiplier = getMultiplierForLockUpEpochs(remainingEpochsForUnlock)
         const formattedStakedAmount = formatUnits(stake.amount, 18)
 
+        const multiplier = getMultiplierForLockUpEpochs(Math.min(stake.remainingEpochs, stake.lockUpEpochs))
+
         return {
-            id: stake.id,
+            id: stake.stakeId,
             amount: formattedStakedAmount,
-            votingPower: String(Math.floor(Number(formattedStakedAmount) * multiplier * 100) / 100),
+            votingPower: String(Math.floor(Number(formattedStakedAmount) * multiplier)),
             multiplier,
             duration: stake.lockUpEpochs * SECONDS_IN_EPOCH,
-            unlocksIn: secondsTillNextEpoch.value! + (remainingEpochsForUnlock * SECONDS_IN_EPOCH),
+            unlocksIn: stake.remainingEpochs === 0 ? 0 : secondsTillNextEpoch.value! + (Math.min(stake.remainingEpochs, stake.lockUpEpochs)) * SECONDS_IN_EPOCH,
+            votePowerStartsInNextEpoch: stake.remainingEpochs > stake.lockUpEpochs,
         }
     })
 })
@@ -109,7 +153,7 @@ const COLUMNS_DEFINITION = [
 
 type SortingProp = typeof COLUMNS_DEFINITION[number]['id']
 
-const sortingProp = useLocalStorage<SortingProp>('tablePositionsSortingProp', 'id')
+const sortingProp = useLocalStorage<SortingProp>('tablePositionsSortingProp', 'unlocksIn')
 const sortingDirection = useLocalStorage<'asc' | 'desc'>('tablePositionsSortingDirection', 'asc')
 
 const sortedTableRowsData = computed(() => {
@@ -202,6 +246,25 @@ const handleSortingIconClick = (newSortingProp: SortingProp) => {
         &:first-child {
             padding: 0 0.5rem;
         }
+
+        &-text--greyed {
+            color: var(--border-color);
+            text-decoration: line-through;
+        }
+    }
+
+    &__not-yet-voting-power-wrapper {
+        display: flex;
+        align-items: center;
+        column-gap: 0.5rem;
+    }
+
+    &__unlocked-text {
+        color: var(--primary-color);
+    }
+
+    &__alert-icon {
+        padding-top: 0.1875rem;
     }
 }
 </style>

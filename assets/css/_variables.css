@@ -8,6 +8,8 @@
     --text-color: #F3F1FF;
     --border-color: #434343;
     --subtitle-color: #A4A4A4;
+    --negative: #f97600;
+    --danger: #fe3033;
 
     /* === FONTS === */ 
     --font-family-screener: "Screener", "sans-serif";
