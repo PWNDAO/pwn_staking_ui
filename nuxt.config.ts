@@ -31,5 +31,12 @@ export default defineNuxtConfig({
   typescript: {
     typeCheck: true,
     strict: true,
+  },
+  app: {
+    head: {
+      link: [
+        {rel: 'icon', href: 'favicon.ico'}
+      ]
+    }
   }
 })
