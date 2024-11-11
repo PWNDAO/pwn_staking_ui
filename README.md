@@ -1,4 +1,4 @@
-Preview available on: https://pwn-staking-ui.on-fleek.app/ . Together with that we also have IPFS deployment.
+Preview available on: https://staking.pwn.xyz . Together with that we also have IPFS deployment.
 
 ## Used addresses:
 - $PWN ERC20: https://github.com/PWNDAO/pwn_staking_ui/blob/master/constants/addresses.ts#L8
@@ -19,4 +19,4 @@ Prerequisite: have some $PWN tokens in your wallet, guide for this is above
 4) You can repeat these steps if you want to test multiple staked positions behaving, etc.
 
 ### Epoch changing
-In testing version of the UI it's also possible to manually set the epoch, so you can see & test what e.g. voting power you will have in a certain epoch, etc.
+In testing version of the UI it's also possible to manually set the epoch, so you can see & test what e.g. voting power you will have in a certain epoch, etc. In production this should be hidden.
