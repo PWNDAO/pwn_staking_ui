@@ -41,13 +41,22 @@
                         {{ stake.multiplier }}
                     </template>
                 </td>
-                <td class="table-positions__td">{{ formatSeconds(stake.duration) }}</td>
+                <td class="table-positions__td">
+                    <span>{{ stake.lockUpEpochs }} epochs</span>
+                    <span class="table-positions__greyed">
+                        ({{ formatSeconds(stake.duration) }})
+                    </span>
+                    
+                </td>
                 <td class="table-positions__td">
                     <template class="table-positions__unlocked-text" v-if="stake.unlocksIn === 0">
                         Unlocked!
                     </template>
                     <template v-else>
-                        {{ formatSeconds(stake.unlocksIn) }}
+                        <span>{{ stake.epochsRemaining }} epochs</span>
+                        <span class="table-positions__greyed">
+                            ({{ formatSeconds(stake.unlocksIn) }})
+                        </span>
                     </template>
                 </td>
             </tr>
@@ -91,7 +100,9 @@ interface TableRowData {
     amount: string // formatted by decimals already
     votingPower: string // formatted by decimals already
     multiplier: number // e.g. x1.3
+    lockUpEpochs: number // e.g. 39
     duration: number // e.g. 3y
+    epochsRemaining: number // e.g. 15.4
     unlocksIn: number // e.g. 1y 79d 12h
     votePowerStartsInNextEpoch: boolean
 }
@@ -106,13 +117,35 @@ const tableRowsData = computed<TableRowData[]>(() => {
 
         const multiplier = getMultiplierForLockUpEpochs(Math.min(stake.remainingEpochs, stake.lockUpEpochs))
 
+        let unlocksIn: number
+        let epochsRemaining: number
+        if (stake.remainingEpochs === 0) {
+            unlocksIn = 0
+            epochsRemaining = 0
+        } else if (stake.remainingEpochs > stake.lockUpEpochs) {
+            // happens in the epoch when user staked (voting power is granted only in the next epoch)
+            epochsRemaining = stake.lockUpEpochs
+            unlocksIn = secondsTillNextEpoch.value! + (epochsRemaining * SECONDS_IN_EPOCH)
+            // add fractional part to the epochsRemaining
+            epochsRemaining += (secondsTillNextEpoch.value! / SECONDS_IN_EPOCH)
+            epochsRemaining = Number(epochsRemaining.toFixed(1))
+        } else {
+            epochsRemaining = stake.remainingEpochs - 1
+            unlocksIn = secondsTillNextEpoch.value! + (epochsRemaining * SECONDS_IN_EPOCH)
+            // add fractional part to the epochsRemaining
+            epochsRemaining += (secondsTillNextEpoch.value! / SECONDS_IN_EPOCH)
+            epochsRemaining = Number(epochsRemaining.toFixed(1))
+        }
+
         return {
             id: stake.stakeId,
             amount: formattedStakedAmount,
             votingPower: String(Math.floor(Number(formattedStakedAmount) * multiplier)),
             multiplier,
+            lockUpEpochs: stake.lockUpEpochs,
             duration: stake.lockUpEpochs * SECONDS_IN_EPOCH,
-            unlocksIn: stake.remainingEpochs === 0 ? 0 : secondsTillNextEpoch.value! + (Math.min(stake.remainingEpochs, stake.lockUpEpochs)) * SECONDS_IN_EPOCH,
+            unlocksIn,
+            epochsRemaining,
             votePowerStartsInNextEpoch: stake.remainingEpochs > stake.lockUpEpochs,
         }
     })
@@ -265,6 +298,12 @@ const handleSortingIconClick = (newSortingProp: SortingProp) => {
 
     &__alert-icon {
         padding-top: 0.1875rem;
+    }
+
+    &__greyed {
+        padding-left: 0.25rem;
+        font-size: 0.75rem;
+        color: var(--grey);
     }
 }
 </style>

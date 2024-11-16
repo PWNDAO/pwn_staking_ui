@@ -56,7 +56,7 @@
             <h3 class="homepage__positions-heading">Positions ({{ stakesCount }})</h3>
             <TablePositions />
         </div>
-        <div v-else-if="isFetchingUserStakes">
+        <div v-else-if="isFetchingUserStakes" class="homepage__table-positions-loader">
             <BaseSkeletor height="100" />
         </div>
     </div>
@@ -178,9 +178,8 @@ const nextUnlockAt = computed(() => {
     let lowestRemainingEpochsForUnlock: number | undefined = undefined
     for (const stake of stakes.data.value) {
         const epochWhereUnlocked = stake.initialEpoch + stake.lockUpEpochs
-        const remainingEpochs = epochWhereUnlocked - Number(epoch.value)
-        if (epochWhereUnlocked > Number(epoch.value) && (lowestRemainingEpochsForUnlock === undefined || remainingEpochs < lowestRemainingEpochsForUnlock)) {
-            lowestRemainingEpochsForUnlock = remainingEpochs
+        if (epochWhereUnlocked > Number(epoch.value) && (lowestRemainingEpochsForUnlock === undefined || stake.remainingEpochs < lowestRemainingEpochsForUnlock)) {
+            lowestRemainingEpochsForUnlock = stake.remainingEpochs
         }
     }
 
@@ -249,6 +248,10 @@ const nextUnlockFormatted = computed(() => {
     &__positions-heading {
         margin-top: 2.5rem;
         margin-bottom: 2.5rem;
+    }
+
+    &__table-positions-loader {
+        margin-top: 2.5rem;
     }
 }
 </style>

@@ -46,7 +46,7 @@ export const getStakesDetails = async (stakeIds: bigint[] | readonly bigint[]): 
 
 export const getSecondsTillNextEpoch = (initialEpochTimestamp: number): number => {
     const currentTimestamp = Math.floor(Date.now() / 1000)
-    return Math.abs(SECONDS_IN_EPOCH - (currentTimestamp % initialEpochTimestamp))
+    return SECONDS_IN_EPOCH - Math.abs(SECONDS_IN_EPOCH - (currentTimestamp % initialEpochTimestamp))
 }
 
 export const getTimeTillNextEpochStringified = (initialEpochTimestamp: number): string => {
