@@ -8,7 +8,7 @@
         <div class="homepage__header-summary">
             <div class="homepage__pwn-balance">
                 <div class="homepage__box-subtitle">
-                    PWN Token Balance in Wallet 
+                    PWN Token Balance in Wallet
                 </div>
 
                 <BaseSkeletor v-if="isFetchingPwnTokenBalance" height="20" />
@@ -83,7 +83,7 @@ const epochBigInt = computed(() => {
 const pwnTokenBalanceQuery = useUserPwnBalance(address)
 const pwnTokenBalance = computed(() => pwnTokenBalanceQuery?.data?.value)
 const pwnTokenBalanceFormatted = computed(() => {
-    if (pwnTokenBalance.value === undefined) { 
+    if (pwnTokenBalance.value === undefined) {
         return undefined
     }
 
@@ -145,7 +145,7 @@ const votingPowerFormatted = computed(() => {
     if (votingPower.value === undefined) {
         return undefined
     }
-    
+
     return formatUnits(votingPower.value, 18)
 })
 const isFetchingVotingPower = computed(() => votingPowerQuery.isLoading.value)
@@ -201,7 +201,7 @@ const nextUnlockFormatted = computed(() => {
 
 <style scoped>
 .homepage {
-    padding: 2.5rem 1rem;
+    padding: 2.5rem 1.5rem;
 
     &__epoch-input {
         display: flex;

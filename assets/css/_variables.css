@@ -2,17 +2,19 @@
     /* === THEME COLORS === */
     --background-color: #111111;
     --content-background-color: #171717;
+    --white-color: 243 241 255;
     --primary-color-base: 0 255 224; /* #00FFE0 */
     --primary-color: rgb(var(--primary-color-base));
     --primary-color-darker: #0F2926;
     --text-color: #F3F1FF;
     --border-color: #434343;
+    --border-color-gray: rgb(var(--white-color) / 50%);;
     --subtitle-color: #A4A4A4;
     --negative: #f97600;
     --danger: #fe3033;
     --grey: #828282;
 
-    /* === FONTS === */ 
+    /* === FONTS === */
     --font-family-screener: "Screener", "sans-serif";
     --font-family-supreme: "Supreme", "monospace";
 }
