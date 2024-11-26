@@ -23,7 +23,6 @@ const { isConnected } = useAccount()
 <style scoped>
 .default-layout {
     &__page-content {
-        background-color: var(--content-background-color);
         margin: 0.5rem 0.5rem 0 0.5rem;
     }
 
@@ -36,6 +35,8 @@ const { isConnected } = useAccount()
 
     &__connect-wallet-text {
         font-weight: 400;
+        font-family: var(--font-family-supreme);
+        font-size: 1.5rem;
     }
 
     &__connect-wallet-btn {
@@ -46,9 +47,13 @@ const { isConnected } = useAccount()
         text-align: center;
         font-family: var(--font-family-screener);
         justify-self: center;
+        height: 3rem;
+        align-content: center;
+        transition: all 0.2s;
 
         &:hover {
             cursor: pointer;
+            background-color: var(--primary-color-2);
         }
     }
 }

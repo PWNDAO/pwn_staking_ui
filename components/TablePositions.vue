@@ -1,6 +1,6 @@
 <template>
     <table class="table-positions">
-        <thead>
+        <thead class="table-positions__head">
             <tr>
                 <th class="table-positions__th" scope="col" :style="{'width': column.width}" v-for="column in COLUMNS_DEFINITION">
                     {{ column.text }}
@@ -18,8 +18,8 @@
                         <span class="table-positions__td-text--greyed">
                             {{ stake.votingPower }}
                         </span>
-                        <BaseTooltip 
-                            :tooltip-text="`You will gain your voting power in next epoch, which will be in ${timeTillNextEpoch}.`" 
+                        <BaseTooltip
+                            :tooltip-text="`You will gain your voting power in next epoch, which will be in ${timeTillNextEpoch}.`"
                             :border-color="TooltipBorderColor.Orange">
                             <template #trigger>
                                 <img src="/icons/alert-icon-red.svg" alt="alert" class="table-positions__alert-icon" />
@@ -46,7 +46,7 @@
                     <span class="table-positions__greyed">
                         ({{ formatSeconds(stake.duration) }})
                     </span>
-                    
+
                 </td>
                 <td class="table-positions__td">
                     <template class="table-positions__unlocked-text" v-if="stake.unlocksIn === 0">
@@ -257,13 +257,35 @@ const handleSortingIconClick = (newSortingProp: SortingProp) => {
 .table-positions {
     width: 100%;
     table-layout: fixed;
-    border-collapse: separate;
+    border-collapse: collapse;
     border-spacing: 0 0.5rem;
+
+    @media (max-width: 930px) {
+        width: 850px;
+    }
+
+    &__head {
+        position: relative;
+
+        &::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            height: 1px;
+            width: 100%;
+            background-image: var(--border-gray-dashed);
+            background-size: auto 2px;
+            /* small hack how to hide buggy double border (top + bottom), when height is 1px */
+        }
+    }
 
     &__th {
         font-size: 0.875rem;
         color: var(--subtitle-color);
         text-align: left;
+        font-family: var(--font-family-screener);
+        font-weight: 400;
+        padding: 0.5rem 0;
 
         &:first-child {
             padding: 0 0.5rem;
@@ -271,8 +293,11 @@ const handleSortingIconClick = (newSortingProp: SortingProp) => {
     }
 
     &__tr {
-        background-color: #1C1C1C;
         height: 3rem;
+
+        &:not(:first-child) {
+            border-top: 1px solid var(--border-color);
+        }
     }
 
     &__td {

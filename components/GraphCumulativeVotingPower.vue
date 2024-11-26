@@ -1,15 +1,17 @@
 <template>
-    <BaseSkeletor v-if="isFetchingUserCumulativeVotingPower" height="100"/>
+    <BaseSkeletor v-if="isFetchingUserCumulativeVotingPower" height="2"/>
     <div v-else-if="parsedDataForGraph" class="graph-cumulative-voting-power">
         <div class="graph-cumulative-voting-power__heading">
             <span>Cumulative Voting Power</span>
             <span v-if="timeTillNextEpoch !== undefined">Time Till Next Epoch: {{ timeTillNextEpoch }}</span>
         </div>
 
-        <!-- @vue-expect-error some weird error mismatch -->
-        <Line v-if="parsedDataForGraph" :data="parsedDataForGraph" :options="chartOptions" />
+        <div class="graph-cumulative-voting-power__graph-wrapper">
+          <!-- @vue-expect-error some weird error mismatch -->
+          <Line v-if="parsedDataForGraph" :data="parsedDataForGraph" :options="chartOptions" />
+        </div>
     </div>
-    
+
 </template>
 
 <script setup lang="ts">
@@ -51,13 +53,13 @@ const highlightCurrentEpochPlugin = {
         ctx.setLineDash([5, 5]); // Creates dashed line pattern
         ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary-color')
         ctx.lineWidth = 1;
-        
+
         // Draw vertical line from x-axis to point
         ctx.moveTo(xPos, yAxis.bottom);
         ctx.lineTo(xPos, yPos);
-        
+
         ctx.stroke();
-        
+
         // Highlight the point
         ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary-color')
         ctx.fillRect(xPos - 5, yPos - 5, 10, 10)
@@ -189,6 +191,8 @@ const timeTillNextEpoch = computed(() => {
 .graph-cumulative-voting-power {
     padding: 1rem;
     background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    overflow: auto;
 
     max-height: 340px;
 
@@ -198,6 +202,18 @@ const timeTillNextEpoch = computed(() => {
         color: var(--subtitle-color);
         margin-bottom: 1rem;
         font-size: 0.875rem;
+
+        @media (max-width: 800px) {
+            width: 700px;
+        }
+    }
+
+    &__graph-wrapper {
+        height: 100%;
+
+        @media (max-width: 800px) {
+            width: 700px;
+        }
     }
 }
 </style>

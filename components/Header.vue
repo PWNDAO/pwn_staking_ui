@@ -119,7 +119,7 @@ const closeMenu = () => {
 }
 
 onClickOutside(menuContainer, (event) => {
-  if (expandMenuButton.value?.contains(event.target)) {
+  if (expandMenuButton.value?.$el?.contains(event.target)) {
     return
   }
   closeMenu()
