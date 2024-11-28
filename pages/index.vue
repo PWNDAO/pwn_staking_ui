@@ -5,59 +5,66 @@
             <div>Manually set epoch: <input v-if="epoch !== undefined" type="number" :value="epoch" @input="event => setEpoch((event.target as HTMLInputElement).value)" /></div>
         </div>
 
+        <h1 class="homepage__overview-title">
+          Overview
+        </h1>
         <div class="homepage__header-summary">
-            <div class="homepage__pwn-balance">
-                <div class="homepage__box-subtitle">
-                    PWN Token Balance in Wallet 
-                </div>
-
-                <BaseSkeletor v-if="isFetchingPwnTokenBalance" height="20" />
-                <div class="homepage__pwn-balance-value" v-else>
-                    {{ pwnTokenBalanceFormatted }} $PWN
-                </div>
-            </div>
-            <div class="homepage__summary-container">
-                <div class="homepage__summary-box">
+            <div class="homepage__header-summary-wrapper">
+                <div class="homepage__pwn-balance">
                     <div class="homepage__box-subtitle">
-                        Staked Tokens
+                        PWN Token Balance in Wallet
                     </div>
-                    <BaseSkeletor v-if="isFetchingUserStakes" height="14" />
-                    <div v-else class="homepage__box-value">{{ stakedTokensFormatted }}</div>
-                </div>
 
-                <div class="homepage__summary-box">
-                    <div class="homepage__box-subtitle">
-                        Voting Power
+                    <div class="homepage__pwn-balance-value">
+                      <BaseSkeletor v-if="isFetchingPwnTokenBalance" height="2" />
+                      <span v-else>
+                        {{ pwnTokenBalanceFormatted }} $PWN
+                      </span>
                     </div>
-                    <BaseSkeletor v-if="isFetchingVotingPower" height="14" />
-                    <div v-else class="homepage__box-value">{{ votingPowerFormatted }}</div>
                 </div>
-
-                <div v-if="votingMultiplier !== undefined" class="homepage__summary-box">
-                    <div class="homepage__box-subtitle">
-                        Voting Multiplier
+                <div class="homepage__summary-container">
+                    <div class="homepage__summary-box">
+                        <div class="homepage__box-subtitle">
+                            Staked Tokens
+                        </div>
+                        <BaseSkeletor v-if="isFetchingUserStakes" height="2" />
+                        <div v-else class="homepage__box-value">{{ stakedTokensFormatted }}</div>
                     </div>
-                    <BaseSkeletor v-if="isFetchingUserStakesWithVotingPower" height="14" />
-                    <div v-else class="homepage__box-value">{{ votingMultiplierFormatted }}</div>
-                </div>
 
-                <div v-if="hasAnyStake" class="homepage__summary-box">
-                    <div class="homepage__box-subtitle">
-                        Time till next unlock
+                    <div class="homepage__summary-box">
+                        <div class="homepage__box-subtitle">
+                            Current Voting Power
+                        </div>
+                        <BaseSkeletor v-if="isFetchingVotingPower" height="2" />
+                        <div v-else class="homepage__box-value">{{ votingPowerFormatted }}</div>
                     </div>
-                    <div class="homepage__box-value">{{ nextUnlockFormatted }}</div>
+
+                    <div v-if="votingMultiplier !== undefined" class="homepage__summary-box">
+                        <div class="homepage__box-subtitle">
+                            Voting Multiplier
+                        </div>
+                        <BaseSkeletor v-if="isFetchingUserStakesWithVotingPower" height="2" />
+                        <div v-else class="homepage__box-value">{{ votingMultiplierFormatted }}</div>
+                    </div>
+
+                    <div v-if="hasAnyStake" class="homepage__summary-box">
+                        <div class="homepage__box-subtitle">
+                            Time till next unlock
+                        </div>
+                        <div class="homepage__box-value">{{ nextUnlockFormatted }}</div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <GraphCumulativeVotingPower />
 
-        <div v-if="hasAnyStake">
+        <div v-if="hasAnyStake" class="homepage__positions">
             <h3 class="homepage__positions-heading">Positions ({{ stakesCount }})</h3>
             <TablePositions />
         </div>
         <div v-else-if="isFetchingUserStakes" class="homepage__table-positions-loader">
-            <BaseSkeletor height="100" />
+            <BaseSkeletor height="2" />
         </div>
     </div>
 </template>
@@ -83,7 +90,7 @@ const epochBigInt = computed(() => {
 const pwnTokenBalanceQuery = useUserPwnBalance(address)
 const pwnTokenBalance = computed(() => pwnTokenBalanceQuery?.data?.value)
 const pwnTokenBalanceFormatted = computed(() => {
-    if (pwnTokenBalance.value === undefined) { 
+    if (pwnTokenBalance.value === undefined) {
         return undefined
     }
 
@@ -104,8 +111,8 @@ const stakedTokens = computed(() => {
     return stakes.data.value?.reduce((sum, stake) => sum + stake.amount, 0n)
 })
 const stakedTokensFormatted = computed(() => {
-    if (stakedTokens.value === undefined) {
-        return '0'
+    if (stakedTokens.value === undefined || stakedTokens.value === 0n) {
+        return 'None'
     }
 
     return formatUnits(stakedTokens.value, 18)
@@ -142,10 +149,10 @@ const secondsTillNextEpoch = computed(() => {
 const votingPowerQuery = useUserVotingPower(address, epochBigInt)
 const votingPower = computed(() => votingPowerQuery.data?.value)
 const votingPowerFormatted = computed(() => {
-    if (votingPower.value === undefined) {
-        return undefined
+    if (votingPower.value === 0n || votingPower.value === undefined) {
+        return 'No voting power'
     }
-    
+
     return formatUnits(votingPower.value, 18)
 })
 const isFetchingVotingPower = computed(() => votingPowerQuery.isLoading.value)
@@ -201,7 +208,7 @@ const nextUnlockFormatted = computed(() => {
 
 <style scoped>
 .homepage {
-    padding: 2.5rem 1rem;
+    padding: 2.5rem 1.5rem;
 
     &__epoch-input {
         display: flex;
@@ -212,15 +219,39 @@ const nextUnlockFormatted = computed(() => {
         border-bottom: 1px solid var(--border-color);
     }
 
+    &__positions {
+      border: 1px solid var(--border-border-primary, #434343);
+      padding: 0.5rem;
+      margin-top: 2rem;
+      overflow: auto;
+    }
+
+    &__overview-title {
+        font-size: 1.5rem;
+        margin: 1.5rem 0 2rem;
+        font-family: var(--font-family-screener);
+    }
+
     &__header-summary {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 2.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border-color);
+        padding: 1rem;
+        height: 118px;
+        box-sizing: border-box;
+        overflow: auto;
     }
 
     &__box-subtitle {
         font-size: 0.875rem;
         color: var(--subtitle-color);
+    }
+
+    &__pwn-balance {
+      display: flex;
+      flex-direction: column;
+      padding: 0.75rem 0;
     }
 
     &__pwn-balance-value {
@@ -236,9 +267,8 @@ const nextUnlockFormatted = computed(() => {
     &__summary-box {
         display: flex;
         flex-direction: column;
-        row-gap: 1rem;
-        padding: 0.5rem 0.75rem;
-        background-color: #1C1C1C;
+        row-gap: 1.5rem;
+        padding: 0.75rem;
     }
 
     &__box-value {
@@ -246,12 +276,31 @@ const nextUnlockFormatted = computed(() => {
     }
 
     &__positions-heading {
-        margin-top: 2.5rem;
-        margin-bottom: 2.5rem;
+        background: #222;
+        padding: 0.5rem 1rem;
+        font-size: 1.125rem;
+        font-family: var(--font-family-screener);
+        margin: 0;
+        font-weight: 400;
+        margin-bottom: 1rem;
+
+        @media (max-width: 930px) {
+            width: 820px;
+        }
     }
 
     &__table-positions-loader {
         margin-top: 2.5rem;
+    }
+
+    &__header-summary-wrapper {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+
+        @media (max-width: 830px) {
+            min-width: 680px;
+        }
     }
 }
 </style>
