@@ -17,6 +17,27 @@ jobs:
         run: corepack enable
       - name: Install Fleek CLI
         run: npm i -g @fleek-platform/cli
+
+      - name: Fill .env.production values with secrets
+        uses: Langsdorf/env-replace@v1.0.6
+        if: github.ref == 'refs/heads/master'
+        with:
+          file: "./.env.production"
+          replace-all: |
+            VITE_PUBLIC_WC_PROJECT_ID=${{ secrets.VITE_PUBLIC_WC_PROJECT_ID }}
+            VITE_PUBLIC_ETHEREUM_NODE_TOKEN=${{ secrets.VITE_PUBLIC_ETHEREUM_NODE_TOKEN }}
+            VITE_PUBLIC_SEPOLIA_NODE_TOKEN=${{ secrets.VITE_PUBLIC_SEPOLIA_NODE_TOKEN }}
+          
+      - name: Fill .env.development values with secrets
+        uses: Langsdorf/env-replace@v1.0.6
+        if: github.ref != 'refs/heads/master'
+        with:
+          file: "./.env.development"
+          replace-all: |
+            VITE_PUBLIC_WC_PROJECT_ID=${{ secrets.VITE_PUBLIC_WC_PROJECT_ID }}
+            VITE_PUBLIC_ETHEREUM_NODE_TOKEN=${{ secrets.VITE_PUBLIC_ETHEREUM_NODE_TOKEN }}
+            VITE_PUBLIC_SEPOLIA_NODE_TOKEN=${{ secrets.VITE_PUBLIC_SEPOLIA_NODE_TOKEN }}
+
       - name: Build & deploy sites using production settings
         if: github.ref == 'refs/heads/master'
         run: fleek sites deploy --config fleek-prod.config.json
