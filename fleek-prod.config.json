@@ -3,7 +3,7 @@
     {
       "slug": "pwn-staking-ui",
       "distDir": ".output/public",
-      "buildCommand": "yarn install && yarn generate-prod"
+      "buildCommand": "yarn install --immutable && yarn generate-prod"
     }
   ]
 }

@@ -13,6 +13,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 20
+      - name: Enable corepack
+        run: corepack enable
       - name: Install Fleek CLI
         run: npm i -g @fleek-platform/cli
       - name: Build & deploy sites using production settings
