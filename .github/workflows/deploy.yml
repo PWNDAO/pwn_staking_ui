@@ -8,31 +8,37 @@ on:
 
 env:
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-  ENV_FILE: ${{ env.BRANCH_NAME == 'master' && '.env.production' || '.env.development' }}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
     steps:
+      - name: Determine environment file
+        shell: bash
+        run: |
+          if [ "$BRANCH_NAME" = "master" ]; then
+            echo "ENV_FILE=.env.production" >> $GITHUB_ENV
+          else
+            echo "ENV_FILE=.env.development" >> $GITHUB_ENV
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
       
+      - name: Enable corepack
+        run: corepack enable
+
       - name: Install Node
         uses: actions/setup-node@v4
         with:
           node-version-file: 'package.json'
           cache: 'yarn'
       
-      - name: Enable corepack
-        run: corepack enable
-      
       - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Fill .env.production values with secrets
+      - name: Fill env values with secrets
         uses: Langsdorf/env-replace@v1.0.6
-        if: github.ref == 'refs/heads/master'
         with:
           file: "./${{ env.ENV_FILE }}"
           replace-all: |
@@ -41,7 +47,7 @@ jobs:
             VITE_PUBLIC_SEPOLIA_NODE_TOKEN=${{ secrets.VITE_PUBLIC_SEPOLIA_NODE_TOKEN }}
 
       - name: Build
-        run: nuxt generate --dotenv ${{ env.ENV_FILE }}
+        run: yarn generate --dotenv ${{ env.ENV_FILE }}
 
       - name: Deploy to Cloudflare
         id: deploy-cloudflare
@@ -50,7 +56,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          command: pages deploy .output/public --project-name=pwn-staking-ui
+          command: pages deploy .output/public --project-name=pwn-staking-ui --branch=${{ env.BRANCH_NAME }} --commit-hash=${{ github.sha }}
 
       - name: Add comment to PR with deployed URL
         if: github.event_name == 'pull_request'
@@ -58,12 +64,27 @@ jobs:
         with:
           message: |
             Deployed on <${{ steps.deploy-cloudflare.outputs.pages-deployment-alias-url }}>!
+          comment-tag: execution
 
-      - name: Deploy to IPFS
-        if: ${{ env.BRANCH_NAME }} == 'master'
-        # TODO
+      # TODO make this work!
+      # - name: Deploy to IPFS  
+      #   if: ${{ env.BRANCH_NAME }} == 'master'
+      #   uses: web3-storage/add-to-web3@v3
+      #   id: deploy-ipfs
+      #   with:
+      #     path_to_add: '.output/public'
+      #     proof: './delegation.car'
+      #     secret_key: ${{ secrets.WEB3_STORAGE_KEY }}
 
-      - name: Update DNSLink
-        if: ${{ env.BRANCH_NAME }} == 'master'
-        # TODO
+      # - name: Update DNSLink
+      #   if: ${{ env.BRANCH_NAME }} == 'master'
+      #   env:
+      #     CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      #     CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+      #     RECORD_DOMAIN: "pwn.xyz"
+      #     RECORD_NAME: "_dnslink.staking"
+      #   uses: PabiGamito/cloudflare-update-dnslink@master
+      #   with:
+      #     cid: ${{ steps.deploy-ipfs.outputs.cid }}
 
+        

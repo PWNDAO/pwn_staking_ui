@@ -1,9 +1,0 @@
-{
-  "sites": [
-    {
-      "slug": "pwn-staking",
-      "distDir": ".output/public",
-      "buildCommand": "yarn install --immutable && yarn generate-dev"
-    }
-  ]
-}

@@ -6,6 +6,7 @@
   "scripts": {
     "serve": "nuxt dev --host 127.0.0.1 --port 8080 --dotenv .env.development.local",
     "serve-prod": "nuxt dev --host 127.0.0.1 --port 8080 --dotenv .env.production.local",
+    "generate": "nuxt generate",
     "generate-dev": "nuxt generate --dotenv .env.development",
     "generate-prod": "nuxt generate --dotenv .env.production",
     "local-generate-dev": "nuxt generate --dotenv .env.development.local",
