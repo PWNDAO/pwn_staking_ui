@@ -4,12 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev-sepolia": "nuxt dev --host 127.0.0.1 --port 8080 --dotenv .env.sepolia.local",
-    "dev-ethereum": "nuxt dev --host 127.0.0.1 --port 8080 --dotenv .env.ethereum.local",
-    "generate-sepolia": "nuxt generate --dotenv .env.sepolia",
-    "local-generate-sepolia": "nuxt generate --dotenv .env.sepolia.local",
-    "generate-ethereum": "nuxt generate --dotenv .env.ethereum",
-    "local-generate-ethereum": "nuxt generate --dotenv .env.ethereum.local",
+    "dev": "nuxt dev --host 127.0.0.1 --port 8080 --dotenv .env.development.local",
+    "dev-prod": "nuxt dev --host 127.0.0.1 --port 8080 --dotenv .env.production.local",
+    "generate-dev": "nuxt generate --dotenv .env.development",
+    "generate-prod": "nuxt generate --dotenv .env.production",
+    "local-generate-dev": "nuxt generate --dotenv .env.development.local",
+    "local-generate-prod": "nuxt generate --dotenv .env.production.local",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {

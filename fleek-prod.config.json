@@ -1,0 +1,9 @@
+{
+  "sites": [
+    {
+      "slug": "pwn-staking-ui",
+      "distDir": ".output/public",
+      "buildCommand": "npm install && npm run generate-prod"
+    }
+  ]
+}

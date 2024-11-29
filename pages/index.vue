@@ -1,8 +1,13 @@
 <template>
     <div class="homepage">
-        <div class="homepage__epoch-input">
-            <div>Real epoch in contract: {{ currentEpoch }}</div>
-            <div>Manually set epoch: <input v-if="epoch !== undefined" type="number" :value="epoch" @input="event => setEpoch((event.target as HTMLInputElement).value)" /></div>
+        <div class="homepage__epoch-input" v-if="showTestingTopBar">
+            <template v-if="showEpochSwitcher">
+                <div>Real epoch in contract: {{ currentEpoch }}</div>
+                <div>Manually set epoch: <input v-if="epoch !== undefined" type="number" :value="epoch" @input="event => setEpoch((event.target as HTMLInputElement).value)" /></div>
+            </template>
+            <button v-if="showChainSwitcher" @click="switchChain">
+                Switch from chainId={{ chainId }} to chainId={{ chainIdToToggleTo }}
+            </button>
         </div>
 
         <h1 class="homepage__overview-title">
@@ -70,15 +75,17 @@
 </template>
 
 <script setup lang="ts">
-import { useAccount } from '@wagmi/vue';
+import { useAccount, useChainId } from '@wagmi/vue';
 import { formatUnits } from 'viem';
+import { getChainIdToToggleTo, toggleActiveChain, useChainIdTypesafe, type SupportedChain } from '~/constants/chain';
 import { SECONDS_IN_EPOCH } from '~/constants/contracts';
 import { useUserStakesWithVotingPower } from '~/utils/hooks';
 import { calculateUserVotingMultiplier } from '~/utils/parsing';
 
 const { address } = useAccount()
+const chainId = useChainIdTypesafe()
 
-const { epoch, setEpoch } = useManuallySetEpoch()
+const { epoch, setEpoch } = useManuallySetEpoch(chainId)
 const epochBigInt = computed(() => {
     if (epoch.value === undefined) {
         return undefined
@@ -87,18 +94,18 @@ const epochBigInt = computed(() => {
     return BigInt(epoch.value)
 })
 
-const pwnTokenBalanceQuery = useUserPwnBalance(address)
+const pwnTokenBalanceQuery = useUserPwnBalance(address, chainId)
 const pwnTokenBalance = computed(() => pwnTokenBalanceQuery?.data?.value)
 const pwnTokenBalanceFormatted = computed(() => {
     if (pwnTokenBalance.value === undefined) {
-        return undefined
+        return '0'
     }
 
     return formatUnits(pwnTokenBalance.value, 18)
 })
 const isFetchingPwnTokenBalance = computed(() => pwnTokenBalanceQuery.isLoading.value)
 
-const stakes = useUserStakes(address)
+const stakes = useUserStakes(address, chainId)
 const stakesCount = computed(() => stakes.data.value?.length ?? 0)
 const hasAnyStake = computed(() => stakesCount.value > 0)
 
@@ -119,7 +126,7 @@ const stakedTokensFormatted = computed(() => {
 })
 const isFetchingUserStakes = computed(() => stakes.isLoading.value)
 
-const currentEpochQuery = useCurrentEpoch()
+const currentEpochQuery = useCurrentEpoch(chainId)
 const currentEpoch = computed(() => {
     if (currentEpochQuery.data?.value === undefined) {
         return undefined
@@ -128,7 +135,7 @@ const currentEpoch = computed(() => {
     return BigInt(currentEpochQuery.data.value)
 })
 
-const initialEpochTimestampQuery = useInitialEpochTimestamp()
+const initialEpochTimestampQuery = useInitialEpochTimestamp(chainId)
 const initialEpochTimestamp = computed(() => {
     if (initialEpochTimestampQuery.data.value === undefined) {
         return undefined
@@ -146,7 +153,7 @@ const secondsTillNextEpoch = computed(() => {
     return (initialEpochTimestamp.value - currentTimestamp) % SECONDS_IN_EPOCH
 })
 
-const votingPowerQuery = useUserVotingPower(address, epochBigInt)
+const votingPowerQuery = useUserVotingPower(address, epochBigInt, chainId)
 const votingPower = computed(() => votingPowerQuery.data?.value)
 const votingPowerFormatted = computed(() => {
     if (votingPower.value === 0n || votingPower.value === undefined) {
@@ -157,7 +164,7 @@ const votingPowerFormatted = computed(() => {
 })
 const isFetchingVotingPower = computed(() => votingPowerQuery.isLoading.value)
 
-const userStakesWithVotingPowerQuery = useUserStakesWithVotingPower(address, epoch)
+const userStakesWithVotingPowerQuery = useUserStakesWithVotingPower(address, epoch, chainId)
 const userStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.data.value)
 const isFetchingUserStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.isLoading.value)
 
@@ -204,6 +211,15 @@ const nextUnlockFormatted = computed(() => {
 
     return formatSeconds(nextUnlockAt.value)
 })
+
+const showEpochSwitcher = import.meta.env.VITE_PUBLIC_SHOW_EPOCH_SWITCHER === 'true'
+const showChainSwitcher = import.meta.env.VITE_PUBLIC_SHOW_ONLY_MAINNET === 'true'
+const showTestingTopBar = showEpochSwitcher || showChainSwitcher
+
+const chainIdToToggleTo = computed(() => getChainIdToToggleTo(chainId.value))
+const switchChain = () => {
+    toggleActiveChain(chainId.value)
+}
 </script>
 
 <style scoped>

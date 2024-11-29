@@ -1,10 +1,11 @@
-import { readContract, readContracts } from "@wagmi/vue/actions"
+import { getChainId, readContract, readContracts } from "@wagmi/vue/actions"
 import { formatUnits } from "viem"
 import { VE_PWN_TOKEN_ABI } from "~/constants/abis"
 import { VE_PWN_TOKEN } from "~/constants/addresses"
+import { getChainIdTypesafe, type SupportedChain } from "~/constants/chain"
 import { DAYS_IN_EPOCH, SECONDS_IN_EPOCH } from "~/constants/contracts"
 import type { PowerInEpoch, StakeDetail } from "~/types/contractResults"
-import { ACTIVE_CHAIN, wagmiAdapter } from "~/wagmi"
+import { wagmiAdapter } from "~/wagmi"
 
 export const calculateUserVotingMultiplier = (epochToCalculateIn: number, stakesWithVotingPower: Readonly<StakeDetail[]>): number => {
     // calculating weight average
@@ -37,10 +38,10 @@ export const getMultiplierForLockUpEpochs = (lockUpEpochs: number) => {
 
 export const getStakesDetails = async (stakeIds: bigint[] | readonly bigint[]): Promise<Readonly<StakeDetail[]>> => {
     return await readContract(wagmiAdapter.wagmiConfig, {
-        address: VE_PWN_TOKEN[ACTIVE_CHAIN]!,
+        address: VE_PWN_TOKEN[getChainIdTypesafe()],
         abi: VE_PWN_TOKEN_ABI,
         functionName: 'getStakes',
-        args: [stakeIds]
+        args: [stakeIds],
     })
 }
 

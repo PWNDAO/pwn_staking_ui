@@ -71,12 +71,14 @@ import { formatUnits, parseUnits } from 'viem';
 import { SECONDS_IN_EPOCH } from '~/constants/contracts';
 import { formatSeconds } from '@/utils/date';
 import { TooltipBorderColor } from './BaseTooltip.vue';
+import { useChainIdTypesafe } from '~/constants/chain';
 
 const { address } = useAccount()
+const chainId = useChainIdTypesafe()
 
-const stakes = useUserStakes(address)
+const stakes = useUserStakes(address, chainId)
 
-const initialEpochTimestampQuery = useInitialEpochTimestamp()
+const initialEpochTimestampQuery = useInitialEpochTimestamp(chainId)
 const initialEpochTimestamp = computed(() => initialEpochTimestampQuery.data.value)
 
 const timeTillNextEpoch = computed(() => {
