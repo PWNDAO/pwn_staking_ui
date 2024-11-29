@@ -213,7 +213,7 @@ const nextUnlockFormatted = computed(() => {
 })
 
 const showEpochSwitcher = import.meta.env.VITE_PUBLIC_SHOW_EPOCH_SWITCHER === 'true'
-const showChainSwitcher = import.meta.env.VITE_PUBLIC_SHOW_ONLY_MAINNET === 'true'
+const showChainSwitcher = import.meta.env.VITE_PUBLIC_SHOW_ONLY_MAINNET === 'false'
 const showTestingTopBar = showEpochSwitcher || showChainSwitcher
 
 const chainIdToToggleTo = computed(() => getChainIdToToggleTo(chainId.value))
