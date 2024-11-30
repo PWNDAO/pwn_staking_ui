@@ -1,0 +1,90 @@
+name: Deploy app
+on:
+  workflow_call:
+  pull_request:
+  push:
+    branches:
+      - "master"
+
+env:
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine environment file
+        shell: bash
+        run: |
+          if [ "$BRANCH_NAME" = "master" ]; then
+            echo "ENV_FILE=.env.production" >> $GITHUB_ENV
+          else
+            echo "ENV_FILE=.env.development" >> $GITHUB_ENV
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'package.json'
+          cache: 'yarn'
+      
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Fill env values with secrets
+        uses: Langsdorf/env-replace@v1.0.6
+        with:
+          file: "./${{ env.ENV_FILE }}"
+          replace-all: |
+            VITE_PUBLIC_WC_PROJECT_ID=${{ secrets.VITE_PUBLIC_WC_PROJECT_ID }}
+            VITE_PUBLIC_ETHEREUM_NODE_TOKEN=${{ secrets.VITE_PUBLIC_ETHEREUM_NODE_TOKEN }}
+            VITE_PUBLIC_SEPOLIA_NODE_TOKEN=${{ secrets.VITE_PUBLIC_SEPOLIA_NODE_TOKEN }}
+
+      - name: Build
+        run: yarn generate --dotenv ${{ env.ENV_FILE }}
+
+      - name: Deploy to Cloudflare
+        id: deploy-cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          command: pages deploy .output/public --project-name=pwn-staking-ui --branch=${{ env.BRANCH_NAME }} --commit-hash=${{ github.sha }}
+
+      - name: Add comment to PR with deployed URL
+        if: github.event_name == 'pull_request'
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          message: |
+            Deployed on <${{ steps.deploy-cloudflare.outputs.pages-deployment-alias-url }}>!
+          comment-tag: execution
+
+      # TODO make this work!
+      # - name: Deploy to IPFS  
+      #   if: ${{ env.BRANCH_NAME }} == 'master'
+      #   uses: web3-storage/add-to-web3@v3
+      #   id: deploy-ipfs
+      #   with:
+      #     path_to_add: '.output/public'
+      #     proof: './delegation.car'
+      #     secret_key: ${{ secrets.WEB3_STORAGE_KEY }}
+
+      # - name: Update DNSLink
+      #   if: ${{ env.BRANCH_NAME }} == 'master'
+      #   env:
+      #     CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      #     CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+      #     RECORD_DOMAIN: "pwn.xyz"
+      #     RECORD_NAME: "_dnslink.staking"
+      #   uses: PabiGamito/cloudflare-update-dnslink@master
+      #   with:
+      #     cid: ${{ steps.deploy-ipfs.outputs.cid }}
+
+        

@@ -1,34 +1,37 @@
 import { useQuery } from "@tanstack/vue-query";
-import { useReadContract } from "@wagmi/vue";
 import { erc20Abi, parseAbiItem, type Address } from "viem";
 import { getLogs } from "viem/actions";
-import { getClient, readContract, readContracts } from "wagmi/actions";
+import { getClient, readContract } from "@wagmi/vue/actions";
 import { EPOCH_CLOCK_ABI, VE_PWN_TOKEN_ABI } from "~/constants/abis";
 import { EPOCH_CLOCK, PWN_TOKEN, STAKED_PWN_NFT, VE_PWN_TOKEN } from "~/constants/addresses";
+import { getChainIdTypesafe, type SupportedChain } from "~/constants/chain";
 import type { PowerInEpoch, StakeDetail } from "~/types/contractResults";
-import { ACTIVE_CHAIN, wagmiAdapter } from "~/wagmi";
+import { wagmiAdapter } from "~/wagmi";
 
-export const useUserPwnBalance = (walletAddress: Ref<Address | undefined>) => {
-    return useReadContract({
-        abi: erc20Abi,
-        address: PWN_TOKEN[ACTIVE_CHAIN],
-        functionName: 'balanceOf',
-        args: [walletAddress as Ref<Address>],
-        query: {
-            enabled: computed(() => walletAddress.value !== undefined)
+export const useUserPwnBalance = (walletAddress: Ref<Address | undefined>, chainId: Ref<SupportedChain>) => {
+    return useQuery({
+        queryKey: ['useUserPwnBalance', walletAddress, chainId],
+        enabled: computed(() => !!walletAddress.value),
+        queryFn: async () => {
+            return await readContract(wagmiAdapter.wagmiConfig, {
+                abi: erc20Abi,
+                address: PWN_TOKEN[chainId.value],
+                functionName: 'balanceOf',
+                args: [walletAddress.value!],
+            })
         }
     })
 }
 
-export const useUserStakes = (walletAddress: Ref<Address | undefined>) => {
+export const useUserStakes = (walletAddress: Ref<Address | undefined>, chainId: Ref<SupportedChain>) => {
     return useQuery({
         // TODO remove throwOnError: true or keep it?
         throwOnError: true,
-        queryKey: ['stakedPwnBalance', walletAddress],
+        queryKey: ['stakedPwnBalance', walletAddress, chainId],
         queryFn: async (): Promise<Readonly<StakeDetail[]>> => {
             const client = getClient(wagmiAdapter.wagmiConfig)
             const receivedStPwnNfts = await getLogs(client!, {
-                address: STAKED_PWN_NFT[ACTIVE_CHAIN],
+                address: STAKED_PWN_NFT[chainId.value],
                 event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)'),
                 args: {
                     to: walletAddress.value!
@@ -38,7 +41,7 @@ export const useUserStakes = (walletAddress: Ref<Address | undefined>) => {
 
             // TODO fetch also these events, or rather just call `owner` on each of the NFT received in `receivedStPwnNfts`
             const sentStPwnNfts = await getLogs(client!, {
-                address: STAKED_PWN_NFT[ACTIVE_CHAIN],
+                address: STAKED_PWN_NFT[chainId.value],
                 event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)'),
                 args: {
                     from: walletAddress.value!
@@ -59,26 +62,31 @@ export const useUserStakes = (walletAddress: Ref<Address | undefined>) => {
     })
 }
 
-export const useCurrentEpoch = () => {
-    return useReadContract({
-        address: EPOCH_CLOCK[ACTIVE_CHAIN]!,
-        abi: EPOCH_CLOCK_ABI,
-        functionName: 'currentEpoch'
+export const useCurrentEpoch = (chainId: Ref<SupportedChain>) => {
+    
+    return useQuery({
+        queryKey: ['getCurrentEpoch', chainId],
+        queryFn: async () => {
+            return await readContract(wagmiAdapter.wagmiConfig, {
+                address: EPOCH_CLOCK[chainId.value],
+                abi: EPOCH_CLOCK_ABI,
+                functionName: 'currentEpoch'
+            })
+        }
     })
 }
 
 const _manuallySetEpoch = ref<number | undefined>(0)
-export const useManuallySetEpoch = () => {
-    const currentEpoch = useCurrentEpoch()
+export const useManuallySetEpoch = (chainId: Ref<SupportedChain>) => {
+    const currentEpoch = useCurrentEpoch(chainId)
 
-    if (_manuallySetEpoch.value === 0) {
-        const unwatch = watch(() => currentEpoch.data.value, (newCurrentEpoch, oldCurrentEpoch) => {
-            if (newCurrentEpoch !== undefined) {
-                _manuallySetEpoch.value = Number(newCurrentEpoch)
-                unwatch()
-            }
-        }, { immediate: true })
-    }
+    watch(() => currentEpoch.data.value, (newCurrentEpoch, oldCurrentEpoch) => {
+        console.log('inside of current epoch watcher')
+        console.log(newCurrentEpoch)
+        if (newCurrentEpoch !== undefined) {
+            _manuallySetEpoch.value = Number(newCurrentEpoch)
+        }
+    }, { immediate: true })
 
     return {
         epoch: _manuallySetEpoch,
@@ -89,34 +97,42 @@ export const useManuallySetEpoch = () => {
 }
 
 // TODO make this persist/cache forever as this won't change - here we should make sure it's persisted for each chain separately (sepolia/ethereum?
-export const useInitialEpochTimestamp = () => {
-    return useReadContract({
-        address: EPOCH_CLOCK[ACTIVE_CHAIN]!,
-        abi: EPOCH_CLOCK_ABI,
-        functionName: 'INITIAL_EPOCH_TIMESTAMP'
-    })
-}
-
-export const useUserVotingPower = (walletAddress: Ref<Address | undefined>, currentEpoch: Ref<bigint | undefined>) => {
-    return useReadContract({
-        address: VE_PWN_TOKEN[ACTIVE_CHAIN]!,
-        abi: VE_PWN_TOKEN_ABI,
-        functionName: 'stakerPowerAt',
-        args: [walletAddress as Ref<Address>, currentEpoch as Ref<bigint>],
-        query: {
-            enabled: computed(() => walletAddress.value !== undefined && currentEpoch.value !== undefined)
-        },
-    })
-}
-
-export const useUserStakesWithVotingPower = (walletAddress: Ref<Address | undefined>, currentEpoch: Ref<number | undefined>) => {
+export const useInitialEpochTimestamp = (chainId: Ref<SupportedChain>) => {
     return useQuery({
-        queryKey: ['userStakesWithVotingPower', walletAddress, currentEpoch],
+        queryKey: ['useInitialEpochTimestamp', chainId],
+        queryFn: async () => {
+            return await readContract(wagmiAdapter.wagmiConfig, {
+                address: EPOCH_CLOCK[chainId.value],
+                abi: EPOCH_CLOCK_ABI,
+                functionName: 'INITIAL_EPOCH_TIMESTAMP',
+            })
+        }
+    })
+}
+
+export const useUserVotingPower = (walletAddress: Ref<Address | undefined>, currentEpoch: Ref<bigint | undefined>, chainId: Ref<SupportedChain>) => {
+    return useQuery({
+        queryKey: ['useUserVotingPower', walletAddress, currentEpoch, chainId],
+        enabled: computed(() => walletAddress.value !== undefined && currentEpoch.value !== undefined),
+        queryFn: async () => {
+            return await readContract(wagmiAdapter.wagmiConfig, {
+                address: VE_PWN_TOKEN[chainId.value],
+                abi: VE_PWN_TOKEN_ABI,
+                functionName: 'stakerPowerAt',
+                args: [walletAddress.value!, currentEpoch.value!],
+            })
+        }
+    })
+}
+
+export const useUserStakesWithVotingPower = (walletAddress: Ref<Address | undefined>, currentEpoch: Ref<number | undefined>, chainId: Ref<SupportedChain>) => {
+    return useQuery({
+        queryKey: ['userStakesWithVotingPower', walletAddress, currentEpoch, chainId],
         enabled: computed(() => walletAddress.value !== undefined && currentEpoch.value !== undefined),
         queryFn: async (): Promise<Readonly<StakeDetail[]>> => {
             const stakeIdsWhereBeneficiary = await readContract(wagmiAdapter.wagmiConfig, {
                 abi: VE_PWN_TOKEN_ABI,
-                address: VE_PWN_TOKEN[ACTIVE_CHAIN]!,
+                address: VE_PWN_TOKEN[chainId.value],
                 functionName: 'beneficiaryOfStakesAt',
                 args: [walletAddress.value!, Number(currentEpoch.value)!]
             })
@@ -126,13 +142,13 @@ export const useUserStakesWithVotingPower = (walletAddress: Ref<Address | undefi
     })
 }
 
-export const useUserCumulativeVotingPowerSummary = (walletAddress: Ref<Address | undefined>, epochs: Ref<bigint[] | undefined>) => {
+export const useUserCumulativeVotingPowerSummary = (walletAddress: Ref<Address | undefined>, epochs: Ref<bigint[] | undefined>, chainId: Ref<SupportedChain>) => {
     return useQuery({
-        queryKey: ['cumulativeVotingPower', walletAddress, epochs],
+        queryKey: ['cumulativeVotingPower', walletAddress, epochs, chainId],
         enabled: computed(() => !!walletAddress.value && !!epochs.value?.length),
         queryFn: async (): Promise<PowerInEpoch[]> => {
             const stakerPowers = await readContract(wagmiAdapter.wagmiConfig, {
-                address: VE_PWN_TOKEN[ACTIVE_CHAIN]!,
+                address: VE_PWN_TOKEN[chainId.value],
                 abi: VE_PWN_TOKEN_ABI,
                 functionName: 'stakerPowers',
                 args: [unref(walletAddress)!, unref(epochs)!]

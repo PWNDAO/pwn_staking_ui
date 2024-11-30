@@ -1,7 +1,8 @@
-import { http, createStorage, cookieStorage } from '@wagmi/vue'
+import { http } from '@wagmi/vue'
 import { createAppKit } from '@reown/appkit/vue'
-import { sepolia, mainnet } from '@reown/appkit/networks'
+import { sepolia, mainnet, type AppKitNetwork } from '@reown/appkit/networks'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
+import { type SupportedChain } from './constants/chain'
 
 const metadata = {
   name: 'PWN',
@@ -16,7 +17,7 @@ const CHAIN_SETTINGS = {
     transports: 
       http('https://eth-mainnet.alchemyapi.io/v2/', {
         // TODO what batch wait time to set? by default is batch.wait 0 (zero delay)
-        batch: true,
+        batch: false,
         fetchOptions: {
           headers: {
             Authorization: `Bearer ${import.meta.env.VITE_PUBLIC_ETHEREUM_NODE_TOKEN}`, // TODO set key usage restrictions once we get this near prod release
@@ -29,7 +30,7 @@ const CHAIN_SETTINGS = {
     transports: 
       http('https://eth-sepolia.g.alchemy.com/v2/', {
         // TODO what batch wait time to set? by default is batch.wait 0 (zero delay)
-        batch: true,
+        batch: false,
         fetchOptions: {
           headers: {
             Authorization: `Bearer ${import.meta.env.VITE_PUBLIC_SEPOLIA_NODE_TOKEN}`, // TODO set key usage restrictions once we get this near prod release
@@ -37,75 +38,28 @@ const CHAIN_SETTINGS = {
         },
       })
   }
-} as const
+} as const satisfies Record<SupportedChain, unknown>
 
-export const ACTIVE_CHAIN = Number(import.meta.env.VITE_PUBLIC_ENABLED_CHAIN_ID) as 1 | 11155111
+const DEFAULT_ENABLED_CHAIN = Number(import.meta.env.VITE_PUBLIC_ENABLED_CHAIN_ID) as SupportedChain
 
-const activatedChainSettings = CHAIN_SETTINGS[ACTIVE_CHAIN]
+const viemChains = (import.meta.env.VITE_PUBLIC_SHOW_ONLY_MAINNET === 'true' 
+                    ? [CHAIN_SETTINGS[1].chain] 
+                    : Object.values(CHAIN_SETTINGS).map(chainSetting => chainSetting.chain)
+                  ) as unknown as [AppKitNetwork, ...AppKitNetwork[]]
 
 export const wagmiAdapter = new WagmiAdapter({
-  ssr: true,
-  // storage: createStorage({
-  //   storage: cookieStorage
-  // }),
   projectId: import.meta.env.VITE_PUBLIC_WC_PROJECT_ID!,
-  networks: [activatedChainSettings.chain],
+  networks: viemChains,
   transports: {
-    [activatedChainSettings.chain.id]: activatedChainSettings.transports,
-  },
+    1: CHAIN_SETTINGS[1].transports,
+    11155111: CHAIN_SETTINGS[11155111].transports,
+  } satisfies Record<SupportedChain, unknown>,
 })
 
 createAppKit({
   adapters: [wagmiAdapter],
-  networks: [activatedChainSettings.chain],
+  networks: viemChains,
   metadata,
   projectId: import.meta.env.VITE_PUBLIC_WC_PROJECT_ID!,
+  defaultNetwork: CHAIN_SETTINGS[DEFAULT_ENABLED_CHAIN].chain,
 })
-
-/*
-export const config = createConfig({
-  chains: [activatedChainSettings.chain],
-  connectors: [
-    // note: there is also `mock` connector that we might want to use for some tests in the future
-    //    https://wagmi.sh/core/api/connectors/mock
-    coinbaseWallet({
-      appName: metadata.name,
-      darkMode: true,
-      chainId: activatedChainSettings.chain.id,
-    }),
-    // TODO what about the `unstable_shimAsyncInject` injected parameter?
-    // TODO is it needed to do anything else to add EIP6963 support? previously there was EIP6963Connector from web3modal
-    injected(),
-    metaMask(),
-    safe({
-      // debug: globalConstants.environment === 'development',
-      // allowedDomains: [/gnosis-safe.io$/, /app.safe.global$/, /cronos-safe.org$/, /multisig.bnbchain.org/],
-      // TODO what about shimDisconnect parameter that is by default off?
-    }),
-    walletConnect({
-      showQrModal: false,
-      projectId: process.env.VITE_PUBLIC_WC_PROJECT_ID!,
-      // TODO what is disableProviderPing?
-      metadata,
-      qrModalOptions: {
-        themeMode: 'dark',
-      },
-    }),
-  ],
-  multiInjectedProviderDiscovery: true, // EIP6963
-  ssr: true, // TODO is this correct?
-  storage: createStorage({
-    storage: cookieStorage
-  }),
-  // @ts-expect-error TS probably wants to have both 1 & 11155111 keys here, but it's not necessary AFAIK
-  transports: {
-    [activatedChainSettings.chain.id]: activatedChainSettings.transports,
-  },
-})
-
-declare module '@wagmi/vue' {
-  interface Register {
-    config: typeof config
-  }
-}
-*/

@@ -32,6 +32,7 @@ import {
 import { formatUnits } from 'viem';
 import { MAX_EPOCHS_IN_FUTURE } from '~/constants/contracts';
 import type { PowerInEpoch } from '~/types/contractResults';
+import { useChainIdTypesafe } from '~/constants/chain';
 
 const highlightCurrentEpochPlugin = {
     id: 'highlightCurrentEpoch',
@@ -84,9 +85,9 @@ ChartJS.register(
 ChartJS.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--text-color');
 
 const { address } = useAccount()
+const chainId = useChainIdTypesafe()
 
-// TODO change this to just useCurrentEpoch once deployed to prod?
-const { epoch } = useManuallySetEpoch()
+const { epoch } = useManuallySetEpoch(chainId)
 
 const NUMBER_OF_PAST_EPOCHS_TO_DISPLAY = 2
 
@@ -103,7 +104,7 @@ const epochsForGraph = computed<bigint[] | undefined>(() => {
     return result
 })
 
-const userCumulativeVotingPowerQuery = useUserCumulativeVotingPowerSummary(address, epochsForGraph)
+const userCumulativeVotingPowerQuery = useUserCumulativeVotingPowerSummary(address, epochsForGraph, chainId)
 const userCumulativeVotingPower = computed(() => userCumulativeVotingPowerQuery.data.value)
 const isFetchingUserCumulativeVotingPower = computed(() => userCumulativeVotingPowerQuery.isLoading.value)
 
@@ -176,7 +177,7 @@ const chartOptions: ChartOptions<'line'> = {
   }
 }
 
-const initialEpochTimestampQuery = useInitialEpochTimestamp()
+const initialEpochTimestampQuery = useInitialEpochTimestamp(chainId)
 const initialEpochTimestamp = computed(() => initialEpochTimestampQuery.data.value)
 const timeTillNextEpoch = computed(() => {
     if (initialEpochTimestamp.value === undefined) {

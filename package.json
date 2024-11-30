@@ -4,36 +4,40 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev-sepolia": "nuxt dev --host 127.0.0.1 --port 8080 --dotenv .env.sepolia.local",
-    "dev-ethereum": "nuxt dev --host 127.0.0.1 --port 8080 --dotenv .env.ethereum.local",
-    "generate-sepolia": "nuxt generate --dotenv .env.sepolia",
-    "local-generate-sepolia": "nuxt generate --dotenv .env.sepolia.local",
-    "generate-ethereum": "nuxt generate --dotenv .env.ethereum",
-    "local-generate-ethereum": "nuxt generate --dotenv .env.ethereum.local",
+    "serve": "nuxt dev --host 127.0.0.1 --port 8080 --dotenv .env.development.local",
+    "serve-prod": "nuxt dev --host 127.0.0.1 --port 8080 --dotenv .env.production.local",
+    "generate": "nuxt generate",
+    "generate-dev": "nuxt generate --dotenv .env.development",
+    "generate-prod": "nuxt generate --dotenv .env.production",
+    "local-generate-dev": "nuxt generate --dotenv .env.development.local",
+    "local-generate-prod": "nuxt generate --dotenv .env.production.local",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@reown/appkit": "^1.1.8",
-    "@reown/appkit-adapter-wagmi": "^1.1.8",
-    "@tanstack/vue-query": "^5.59.16",
-    "@vueuse/core": "^11.1.0",
-    "@wagmi/vue": "^0.0.56",
-    "chart.js": "^4.4.5",
-    "nuxt": "^3.13.2",
-    "nuxt-svgo": "^4.0.6",
-    "viem": "^2.21.35",
-    "vue": "^3.5.12",
-    "vue-chartjs": "^5.3.1",
-    "vue-router": "^4.4.5",
+    "@reown/appkit": "1.1.8",
+    "@reown/appkit-adapter-wagmi": "1.1.8",
+    "@tanstack/vue-query": "^5.61.5",
+    "@vueuse/core": "^12.0.0",
+    "@wagmi/vue": "^0.0.67",
+    "chart.js": "^4.4.6",
+    "nuxt": "^3.14.1592",
+    "nuxt-svgo": "^4.0.9",
+    "viem": "^2.21.52",
+    "vue": "^3.5.13",
+    "vue-chartjs": "^5.3.2",
+    "vue-router": "^4.5.0",
     "vue-skeletor": "^1.0.6",
     "vue-tippy": "^6.5.0",
-    "wagmi": "^2.12.25"
+    "wagmi": "^2.13.2"
   },
   "devDependencies": {
-    "postcss": "^8.4.47",
-    "postcss-nested": "^6.2.0",
-    "typescript": "^5.6.3",
-    "vue-tsc": "^2.1.8"
+    "postcss": "^8.4.49",
+    "postcss-nested": "^7.0.2",
+    "typescript": "5.6.2",
+    "vue-tsc": "^2.1.10"
   },
-  "packageManager": "yarn@3.3.1"
+  "packageManager": "yarn@3.3.1",
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }
