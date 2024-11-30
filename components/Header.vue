@@ -133,8 +133,8 @@ const menuItems = [
     isExternal: false
   },
   {
-    label: 'Voting',
-    link: 'https://voting.pwn.xyz',
+    label: 'Governance',
+    link: 'https://governance.pwn.xyz',
     isActive: false,
     isExternal: true
   },

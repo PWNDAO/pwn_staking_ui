@@ -1,10 +1,10 @@
-import { getChainId, readContract, readContracts } from "@wagmi/vue/actions"
+import { readContract } from "@wagmi/vue/actions"
 import { formatUnits } from "viem"
 import { VE_PWN_TOKEN_ABI } from "~/constants/abis"
 import { VE_PWN_TOKEN } from "~/constants/addresses"
-import { getChainIdTypesafe, type SupportedChain } from "~/constants/chain"
-import { DAYS_IN_EPOCH, SECONDS_IN_EPOCH } from "~/constants/contracts"
-import type { PowerInEpoch, StakeDetail } from "~/types/contractResults"
+import { getChainIdTypesafe } from "~/constants/chain"
+import { SECONDS_IN_EPOCH } from "~/constants/contracts"
+import type { StakeDetail } from "~/types/contractResults"
 import { wagmiAdapter } from "~/wagmi"
 
 export const calculateUserVotingMultiplier = (epochToCalculateIn: number, stakesWithVotingPower: Readonly<StakeDetail[]>): number => {
@@ -47,8 +47,14 @@ export const getStakesDetails = async (stakeIds: bigint[] | readonly bigint[]): 
 
 export const getSecondsTillNextEpoch = (initialEpochTimestamp: number): number => {
     const currentTimestamp = Math.floor(Date.now() / 1000)
-    return SECONDS_IN_EPOCH - Math.abs(SECONDS_IN_EPOCH - (currentTimestamp % initialEpochTimestamp))
-}
+    // Calculate which epoch we're currently in
+    const currentEpochNumber = Math.floor((currentTimestamp - initialEpochTimestamp) / SECONDS_IN_EPOCH) + 1;
+    // Calculate the timestamp of the next epoch
+    const nextEpochTimestamp = initialEpochTimestamp + (currentEpochNumber * SECONDS_IN_EPOCH);
+    // Calculate time remaining until next epoch
+    return nextEpochTimestamp - currentTimestamp;
+  }
+  
 
 export const getTimeTillNextEpochStringified = (initialEpochTimestamp: number): string => {
     return formatSeconds(getSecondsTillNextEpoch(initialEpochTimestamp))
