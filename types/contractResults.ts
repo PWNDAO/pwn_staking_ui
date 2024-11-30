@@ -12,7 +12,7 @@ import type { ExtractAbiFunction, AbiParametersToPrimitiveTypes } from 'abitype'
     amount: bigint;
 }
  */
-export type StakeDetail = AbiParametersToPrimitiveTypes<ExtractAbiFunction<typeof VE_PWN_TOKEN_ABI, 'getStake'>['outputs']>[number]
+export type StakeDetail = AbiParametersToPrimitiveTypes<ExtractAbiFunction<typeof VE_PWN_TOKEN_ABI, 'getStakes'>['outputs']>[number][number]
 
 export interface PowerInEpoch {
     epoch: bigint
