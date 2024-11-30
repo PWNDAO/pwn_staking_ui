@@ -22,3 +22,8 @@ export const EPOCH_CLOCK = {
     1: '0xb9962f81Ad51Df9fcfd14400fB0A10E665b7cF11',
     11155111: '0x19e3293196aee99BB3080f28B9D3b4ea7F232b8d'
 } as const satisfies ContractAddressRegistry
+
+export const PWN_VESTING_MANAGER = {
+    // TODO add address once deployed
+    1: undefined,
+} as const
