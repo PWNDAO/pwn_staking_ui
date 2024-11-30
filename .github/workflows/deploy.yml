@@ -38,7 +38,8 @@ jobs:
         run: yarn install --immutable
 
       - name: Fill env values with secrets
-        uses: Langsdorf/env-replace@v1.0.6
+        #uses: Langsdorf/env-replace@v1.0.6
+        uses: microHoffman/env-replace@master
         with:
           file: "./${{ env.ENV_FILE }}"
           replace-all: |
