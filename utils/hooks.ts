@@ -81,8 +81,6 @@ export const useManuallySetEpoch = (chainId: Ref<SupportedChain>) => {
     const currentEpoch = useCurrentEpoch(chainId)
 
     watch(() => currentEpoch.data.value, (newCurrentEpoch, oldCurrentEpoch) => {
-        console.log('inside of current epoch watcher')
-        console.log(newCurrentEpoch)
         if (newCurrentEpoch !== undefined) {
             _manuallySetEpoch.value = Number(newCurrentEpoch)
         }
