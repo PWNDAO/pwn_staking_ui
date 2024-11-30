@@ -5,9 +5,9 @@ import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 import { type SupportedChain } from './constants/chain'
 
 const metadata = {
-  name: 'PWN',
-  description: 'PWN is a hub for peer-to-peer (P2P) loans backed by digital assets. Use your tokens or NFTs as collateral.',
-  url: 'https://staking.pwn.xyz', // TODO align on final url
+  name: 'PWN DAO Staking',
+  description: 'Easily check and manage your PWN DAO staking and voting positions.',
+  url: 'https://staking.pwn.xyz',
   icons: ['https://pwn.xyz/pwn-logo.png'],
 }
 
@@ -16,11 +16,10 @@ const CHAIN_SETTINGS = {
     chain: mainnet,
     transports: 
       http('https://eth-mainnet.alchemyapi.io/v2/', {
-        // TODO what batch wait time to set? by default is batch.wait 0 (zero delay)
-        batch: false,
+        batch: true,
         fetchOptions: {
           headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_PUBLIC_ETHEREUM_NODE_TOKEN}`, // TODO set key usage restrictions once we get this near prod release
+            Authorization: `Bearer ${import.meta.env.VITE_PUBLIC_ETHEREUM_NODE_TOKEN}`,
           },
         },
       })
@@ -29,11 +28,10 @@ const CHAIN_SETTINGS = {
     chain: sepolia,
     transports: 
       http('https://eth-sepolia.g.alchemy.com/v2/', {
-        // TODO what batch wait time to set? by default is batch.wait 0 (zero delay)
-        batch: false,
+        batch: true,
         fetchOptions: {
           headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_PUBLIC_SEPOLIA_NODE_TOKEN}`, // TODO set key usage restrictions once we get this near prod release
+            Authorization: `Bearer ${import.meta.env.VITE_PUBLIC_SEPOLIA_NODE_TOKEN}`,
           },
         },
       })
