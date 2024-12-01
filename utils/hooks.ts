@@ -3,9 +3,9 @@ import { erc20Abi, parseAbiItem, type Address } from "viem";
 import { getLogs } from "viem/actions";
 import { getClient, readContract } from "@wagmi/vue/actions";
 import { EPOCH_CLOCK_ABI, VE_PWN_TOKEN_ABI } from "~/constants/abis";
-import { EPOCH_CLOCK, PWN_TOKEN, STAKED_PWN_NFT, VE_PWN_TOKEN } from "~/constants/addresses";
+import { EPOCH_CLOCK, PWN_TOKEN, PWN_VESTING_MANAGER, STAKED_PWN_NFT, VE_PWN_TOKEN } from "~/constants/addresses";
 import { getChainIdTypesafe, type SupportedChain } from "~/constants/chain";
-import type { PowerInEpoch, StakeDetail } from "~/types/contractResults";
+import type { PowerInEpoch, StakeDetail, VestingDetail } from "~/types/contractResults";
 import { wagmiAdapter } from "~/wagmi";
 
 export const useUserPwnBalance = (walletAddress: Ref<Address | undefined>, chainId: Ref<SupportedChain>) => {
@@ -25,8 +25,6 @@ export const useUserPwnBalance = (walletAddress: Ref<Address | undefined>, chain
 
 export const useUserStakes = (walletAddress: Ref<Address | undefined>, chainId: Ref<SupportedChain>) => {
     return useQuery({
-        // TODO remove throwOnError: true or keep it?
-        throwOnError: true,
         queryKey: ['stakedPwnBalance', walletAddress, chainId],
         queryFn: async (): Promise<Readonly<StakeDetail[]>> => {
             const client = getClient(wagmiAdapter.wagmiConfig)
@@ -39,7 +37,6 @@ export const useUserStakes = (walletAddress: Ref<Address | undefined>, chainId: 
                 fromBlock: 0n,
             })
 
-            // TODO fetch also these events, or rather just call `owner` on each of the NFT received in `receivedStPwnNfts`
             const sentStPwnNfts = await getLogs(client!, {
                 address: STAKED_PWN_NFT[chainId.value],
                 event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)'),
@@ -63,7 +60,6 @@ export const useUserStakes = (walletAddress: Ref<Address | undefined>, chainId: 
 }
 
 export const useCurrentEpoch = (chainId: Ref<SupportedChain>) => {
-    
     return useQuery({
         queryKey: ['getCurrentEpoch', chainId],
         queryFn: async () => {
@@ -169,6 +165,50 @@ export const useUserCumulativeVotingPowerSummary = (walletAddress: Ref<Address |
             strippedParsedStakerPowers.push({ epoch: lastEpochWithPower.epoch + 1n, power: 0n })
             strippedParsedStakerPowers.push({ epoch: lastEpochWithPower.epoch + 2n, power: 0n })
             return strippedParsedStakerPowers
+        }
+    })
+}
+
+export const useUserVestedTokens = (walletAddress: Ref<Address | undefined>, chainId: Ref<SupportedChain>) => {
+    return useQuery({
+        queryKey: ['useUserVestedTokens', walletAddress, chainId],
+        enabled: computed(() => !!walletAddress.value && PWN_VESTING_MANAGER?.[chainId.value as 1] !== undefined),
+        queryFn: async (): Promise<VestingDetail[]> => {
+            const client = getClient(wagmiAdapter.wagmiConfig)
+            const createdVestings = await getLogs(client!, {
+                address: PWN_VESTING_MANAGER[chainId.value as 1],
+                event: parseAbiItem('event VestingCreated(address indexed owner, uint256 indexed amount, uint256 indexed unlockEpoch, uint256 initialEpoch)'),
+                args: {
+                    owner: walletAddress.value!
+                },
+                fromBlock: 0n,
+            })
+
+            const deletedVestings = await getLogs(client!, {
+                address: PWN_VESTING_MANAGER[chainId.value as 1],
+                event: parseAbiItem('event VestingDeleted(address indexed owner, uint256 indexed amount, uint256 indexed unlockEpoch)'),
+                args: {
+                    owner: walletAddress.value!
+                },
+                fromBlock: 0n,
+            })
+
+            const noLongerActiveVestings = deletedVestings.map(deletedVesting => {
+                return { amount: deletedVesting.args.amount!, unlockEpoch: deletedVesting.args.unlockEpoch! }
+            })
+
+            const activeVestings: VestingDetail[] = []
+            for (const createdVesting of createdVestings) {
+                if (noLongerActiveVestings.every(inactiveVesting => inactiveVesting.unlockEpoch !== createdVesting.args.unlockEpoch)) {
+                    activeVestings.push({
+                        owner: createdVesting.args.owner!,
+                        amount: createdVesting.args.amount!,
+                        unlockEpoch: Number(createdVesting.args.unlockEpoch),
+                        initialEpoch: Number(createdVesting.args.initialEpoch)
+                    })
+                }
+            }
+            return activeVestings
         }
     })
 }

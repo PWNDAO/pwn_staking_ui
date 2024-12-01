@@ -11,7 +11,9 @@
 
         <tbody>
             <tr class="table-positions__tr" v-for="stake in sortedTableRowsData">
-                <td class="table-positions__td">{{ stake.id }}</td>
+                <td class="table-positions__td">
+                    {{ stake.idText }}
+                </td>
                 <td class="table-positions__td">{{ stake.amount }}</td>
                 <td class="table-positions__td">
                     <div v-if="stake.votePowerStartsInNextEpoch" class="table-positions__not-yet-voting-power-wrapper">
@@ -26,10 +28,9 @@
                             </template>
                         </BaseTooltip>
                     </div>
-                    <template v-else>
-                        <!-- TODO any special view for case when stake is unlocked already? -->
+                    <span v-else :class="{'table-positions__td-text--greyed': stake.isVesting}">
                         {{ stake.votingPower }}
-                    </template>
+                    </span>
                 </td>
                 <td class="table-positions__td">
                     <template v-if="stake.votePowerStartsInNextEpoch">
@@ -37,9 +38,9 @@
                             {{ stake.multiplier }}
                         </span>
                     </template>
-                    <template v-else>
+                    <span v-else :class="{'table-positions__td-text--greyed': stake.isVesting}">
                         {{ stake.multiplier }}
-                    </template>
+                    </span>
                 </td>
                 <td class="table-positions__td">
                     <span>{{ stake.lockUpEpochs }} epochs</span>
@@ -72,11 +73,18 @@ import { SECONDS_IN_EPOCH } from '~/constants/contracts';
 import { formatSeconds } from '@/utils/date';
 import { TooltipBorderColor } from './BaseTooltip.vue';
 import { useChainIdTypesafe } from '~/constants/chain';
+import { useUserVestedTokens, useCurrentEpoch } from '~/utils/hooks';
 
 const { address } = useAccount()
 const chainId = useChainIdTypesafe()
 
 const stakes = useUserStakes(address, chainId)
+
+const vestedTokensQuery = useUserVestedTokens(address, chainId)
+const vestedTokens = computed(() => vestedTokensQuery.data?.value)
+
+const currentEpochQuery = useCurrentEpoch(chainId)
+const currentEpoch = computed(() => currentEpochQuery.data?.value)
 
 const initialEpochTimestampQuery = useInitialEpochTimestamp(chainId)
 const initialEpochTimestamp = computed(() => initialEpochTimestampQuery.data.value)
@@ -99,6 +107,7 @@ const secondsTillNextEpoch = computed(() => {
 
 interface TableRowData {
     id: bigint
+    idText: string
     amount: string // formatted by decimals already
     votingPower: string // formatted by decimals already
     multiplier: number // e.g. x1.3
@@ -107,6 +116,7 @@ interface TableRowData {
     epochsRemaining: number // e.g. 15.4
     unlocksIn: number // e.g. 1y 79d 12h
     votePowerStartsInNextEpoch: boolean
+    isVesting: boolean
 }
 
 const tableRowsData = computed<TableRowData[]>(() => {
@@ -114,7 +124,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
         return []
     }
 
-    return stakes.data.value.map(stake => {
+    const userStakes: TableRowData[] = stakes.data.value.map(stake => {
         const formattedStakedAmount = formatUnits(stake.amount, 18)
 
         const multiplier = getMultiplierForLockUpEpochs(Math.min(stake.remainingEpochs, stake.lockUpEpochs))
@@ -141,6 +151,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
 
         return {
             id: stake.stakeId,
+            idText: String(stake.stakeId),
             amount: formattedStakedAmount,
             votingPower: String(Math.floor(Number(formattedStakedAmount) * multiplier)),
             multiplier,
@@ -149,8 +160,46 @@ const tableRowsData = computed<TableRowData[]>(() => {
             unlocksIn,
             epochsRemaining,
             votePowerStartsInNextEpoch: stake.remainingEpochs > stake.lockUpEpochs,
+            isVesting: false,
         }
     })
+
+    if (vestedTokens.value?.length) {
+        for (const [index, vestedToken] of vestedTokens.value.entries()) {
+            const lockUpEpochs = vestedToken.unlockEpoch - vestedToken.initialEpoch
+            const _currentEpoch = currentEpoch.value ?? 0
+            let epochsDelta = _currentEpoch > vestedToken.unlockEpoch ? 0 : vestedToken.unlockEpoch - _currentEpoch
+            let epochsRemaining: number
+            let unlocksIn: number
+            if (epochsDelta === 1) {
+                // add fractional part to the epochsRemaining
+                epochsRemaining = Number((secondsTillNextEpoch.value! / SECONDS_IN_EPOCH).toFixed(1))
+                unlocksIn = secondsTillNextEpoch.value!
+            } else if (epochsDelta <= 0) {
+                epochsRemaining = 0
+                unlocksIn = 0
+            } else {
+                // add fractional part to the epochsRemaining
+                epochsRemaining = (epochsDelta - 1) + Number((secondsTillNextEpoch.value! / SECONDS_IN_EPOCH).toFixed(1))
+                unlocksIn = secondsTillNextEpoch.value! +  ((epochsDelta - 1) * SECONDS_IN_EPOCH)
+            }
+            userStakes.push({
+                id: BigInt(index + 1), // arbitrary number as vestings does not have stake id
+                idText: `Vesting ${index + 1}`,
+                amount: formatUnits(vestedToken.amount, 18),
+                votingPower: '0',
+                multiplier: 0,
+                lockUpEpochs,
+                duration: lockUpEpochs * SECONDS_IN_EPOCH,
+                unlocksIn,
+                epochsRemaining,
+                votePowerStartsInNextEpoch: false,
+                isVesting: true,
+            })
+        }
+    }
+
+    return userStakes
 })
 
 const COLUMNS_DEFINITION = [

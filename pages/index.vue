@@ -28,6 +28,14 @@
                     </div>
                 </div>
                 <div class="homepage__summary-container">
+                    <div class="homepage__summary-box" v-if="vestedTokensAmount">
+                        <div class="homepage__box-subtitle">
+                            Vested Tokens
+                        </div>
+                        <BaseSkeletor v-if="isFetchingVestedTokens" height="2" />
+                        <div v-else class="homepage__box-value">{{ vestedTokensAmountFormatted }}</div>
+                    </div>
+
                     <div class="homepage__summary-box">
                         <div class="homepage__box-subtitle">
                             Staked Tokens
@@ -210,6 +218,27 @@ const nextUnlockFormatted = computed(() => {
     }
 
     return formatSeconds(nextUnlockAt.value)
+})
+
+const vestedTokensQuery = useUserVestedTokens(address, chainId)
+const isFetchingVestedTokens = computed(() => vestedTokensQuery.isLoading.value)
+const vestedTokensAmount = computed(() => {
+    if (!vestedTokensQuery.data?.value?.length) {
+        return undefined 
+    }
+
+    let totalAmount = 0n
+    for (const vestedToken of vestedTokensQuery.data.value) {
+        totalAmount += vestedToken.amount
+    }
+    return totalAmount
+})
+const vestedTokensAmountFormatted = computed(() => {
+    if (vestedTokensAmount.value === undefined) {
+        return undefined
+    }
+
+    return formatUnits(vestedTokensAmount.value, 18)
 })
 
 const showEpochSwitcher = import.meta.env.VITE_PUBLIC_SHOW_EPOCH_SWITCHER === 'true'
