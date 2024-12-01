@@ -168,7 +168,6 @@ const handleWalletClick = async () => {
   padding: 1rem 2.125rem;
   justify-content: space-between;
   font-family: var(--font-family-screener);
-  border-bottom: 1px solid var(--border-color);
   align-items: center;
 
   &__logo-and-menu-items {

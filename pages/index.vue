@@ -17,17 +17,25 @@
             <div class="homepage__header-summary-wrapper">
                 <div class="homepage__pwn-balance">
                     <div class="homepage__box-subtitle">
-                        PWN Token Balance in Wallet
+                        Total PWN Tokens
                     </div>
 
                     <div class="homepage__pwn-balance-value">
-                      <BaseSkeletor v-if="isFetchingPwnTokenBalance" height="2" />
+                      <BaseSkeletor v-if="isFetchingPwnTokenBalance || isFetchingVestedTokens || isFetchingUserStakes " height="2" />
                       <span v-else>
-                        {{ pwnTokenBalanceFormatted }} $PWN
+                        {{ totalPwnTokensFormatted }} PWN
                       </span>
                     </div>
                 </div>
                 <div class="homepage__summary-container">
+                    <div class="homepage__summary-box">
+                        <div class="homepage__box-subtitle">
+                            Idle Tokens
+                        </div>
+                        <BaseSkeletor v-if="isFetchingPwnTokenBalance" height="2" />
+                        <div v-else class="homepage__box-value">{{ pwnTokenBalanceFormatted }}</div>
+                    </div>
+
                     <div class="homepage__summary-box" v-if="vestedTokensAmount">
                         <div class="homepage__box-subtitle">
                             Vested Tokens
@@ -239,6 +247,13 @@ const vestedTokensAmountFormatted = computed(() => {
     }
 
     return formatUnits(vestedTokensAmount.value, 18)
+})
+
+const totalPwnTokens = computed(() => {
+    return (vestedTokensAmount.value ?? 0n) + (stakedTokens.value ?? 0n) + (pwnTokenBalance.value ?? 0n)
+})
+const totalPwnTokensFormatted = computed(() => {
+    return formatUnits(totalPwnTokens.value ?? 0n, 18)
 })
 
 const showEpochSwitcher = import.meta.env.VITE_PUBLIC_SHOW_EPOCH_SWITCHER === 'true'
