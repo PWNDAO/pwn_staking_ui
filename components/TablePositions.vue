@@ -358,7 +358,6 @@ const handleSortingIconClick = (newSortingProp: SortingProp) => {
 
         &-text--greyed {
             color: var(--border-color);
-            text-decoration: line-through;
         }
     }
 
