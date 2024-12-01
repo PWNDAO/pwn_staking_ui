@@ -113,8 +113,8 @@ const epochBigInt = computed(() => {
 const pwnTokenBalanceQuery = useUserPwnBalance(address, chainId)
 const pwnTokenBalance = computed(() => pwnTokenBalanceQuery?.data?.value)
 const pwnTokenBalanceFormatted = computed(() => {
-    if (pwnTokenBalance.value === undefined) {
-        return '0'
+    if (pwnTokenBalance.value === undefined || pwnTokenBalance.value === 0n) {
+        return 'None'
     }
 
     return formatUnits(pwnTokenBalance.value, 18)

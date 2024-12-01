@@ -166,8 +166,6 @@ const tableRowsData = computed<TableRowData[]>(() => {
 
     if (vestedTokens.value?.length) {
         for (const [index, vestedToken] of vestedTokens.value.entries()) {
-            console.log('vestedToken')
-            console.log(vestedToken)
             const lockUpEpochs = vestedToken.unlockEpoch - vestedToken.initialEpoch
             const _currentEpoch = currentEpoch.value ?? 0
             let epochsDelta = _currentEpoch > vestedToken.unlockEpoch ? 0 : vestedToken.unlockEpoch - _currentEpoch
