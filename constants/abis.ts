@@ -179,6 +179,31 @@ export const PWN_VESTING_MANAGER_ABI = [
      "stateMutability":"nonpayable"
   },
   {
+    "type":"event",
+    "name":"VestingDeleted",
+    "inputs":[
+       {
+          "name":"owner",
+          "type":"address",
+          "indexed":true,
+          "internalType":"address"
+       },
+       {
+          "name":"amount",
+          "type":"uint256",
+          "indexed":true,
+          "internalType":"uint256"
+       },
+       {
+          "name":"unlockEpoch",
+          "type":"uint256",
+          "indexed":true,
+          "internalType":"uint256"
+       }
+    ],
+    "anonymous":false
+ },
+  {
      "type":"function",
      "name":"upgradeToStake",
      "inputs":[
@@ -201,31 +226,6 @@ export const PWN_VESTING_MANAGER_ABI = [
         }
      ],
      "stateMutability":"nonpayable"
-  },
-  {
-     "type":"event",
-     "name":"VestingClaimed",
-     "inputs":[
-        {
-           "name":"owner",
-           "type":"address",
-           "indexed":true,
-           "internalType":"address"
-        },
-        {
-           "name":"amount",
-           "type":"uint256",
-           "indexed":true,
-           "internalType":"uint256"
-        },
-        {
-           "name":"unlockEpoch",
-           "type":"uint256",
-           "indexed":true,
-           "internalType":"uint256"
-        }
-     ],
-     "anonymous":false
   },
   {
      "type":"event",
@@ -258,35 +258,4 @@ export const PWN_VESTING_MANAGER_ABI = [
      ],
      "anonymous":false
   },
-  {
-     "type":"event",
-     "name":"VestingStaked",
-     "inputs":[
-        {
-           "name":"owner",
-           "type":"address",
-           "indexed":true,
-           "internalType":"address"
-        },
-        {
-           "name":"amount",
-           "type":"uint256",
-           "indexed":true,
-           "internalType":"uint256"
-        },
-        {
-           "name":"unlockEpoch",
-           "type":"uint256",
-           "indexed":true,
-           "internalType":"uint256"
-        },
-        {
-           "name":"stakeId",
-           "type":"uint256",
-           "indexed":false,
-           "internalType":"uint256"
-        }
-     ],
-     "anonymous":false
-  }
 ] as const

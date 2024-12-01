@@ -1,4 +1,4 @@
-import { PWN_VESTING_MANAGER_ABI, VE_PWN_TOKEN_ABI } from "~/constants/abis"
+import { VE_PWN_TOKEN_ABI } from "~/constants/abis"
 import type { ExtractAbiFunction, AbiParametersToPrimitiveTypes, ExtractAbiEvent, Address } from 'abitype'
 
 /*

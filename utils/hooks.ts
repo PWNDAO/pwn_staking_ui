@@ -184,31 +184,18 @@ export const useUserVestedTokens = (walletAddress: Ref<Address | undefined>, cha
                 fromBlock: 0n,
             })
 
-            const claimedVestings = await getLogs(client!, {
-                address: STAKED_PWN_NFT[chainId.value],
-                event: parseAbiItem('event VestingClaimed(address indexed owner, uint256 indexed amount, uint256 indexed unlockEpoch)'),
+            const deletedVestings = await getLogs(client!, {
+                address: PWN_VESTING_MANAGER[chainId.value as 1],
+                event: parseAbiItem('event VestingDeleted(address indexed owner, uint256 indexed amount, uint256 indexed unlockEpoch)'),
                 args: {
                     owner: walletAddress.value!
                 },
                 fromBlock: 0n,
             })
 
-            const stakedVestings = await getLogs(client!, {
-                address: STAKED_PWN_NFT[chainId.value],
-                event: parseAbiItem('event VestingStaked(address indexed owner, uint256 indexed amount, uint256 indexed unlockEpoch, uint256 stakeId)'),
-                args: {
-                    owner: walletAddress.value!
-                },
-                fromBlock: 0n,
+            const noLongerActiveVestings = deletedVestings.map(deletedVesting => {
+                return { amount: deletedVesting.args.amount!, unlockEpoch: deletedVesting.args.unlockEpoch! }
             })
-
-            const noLongerActiveVestings: { amount: bigint; unlockEpoch: bigint; }[] = []
-            for (const claimedVesting of claimedVestings) {
-                noLongerActiveVestings.push({ amount: claimedVesting.args.amount!, unlockEpoch: claimedVesting.args.unlockEpoch! })
-            }
-            for (const stakedVesting of stakedVestings) {
-                noLongerActiveVestings.push({ amount: stakedVesting.args.amount!, unlockEpoch: stakedVesting.args.unlockEpoch! })
-            }
 
             const activeVestings: VestingDetail[] = []
             for (const createdVesting of createdVestings) {
