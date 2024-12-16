@@ -25,14 +25,15 @@ import {
   LineElement,
   Title,
   Tooltip,
-  Legend,
   Filler,
-  type ChartOptions
+  TimeScale,
+  type ChartOptions,
+  type Point
 } from 'chart.js'
 import { formatUnits } from 'viem';
 import { MAX_EPOCHS_IN_FUTURE } from '~/constants/contracts';
-import type { PowerInEpoch } from '~/types/contractResults';
 import { useChainIdTypesafe } from '~/constants/chain';
+import 'chartjs-adapter-date-fns';
 
 const highlightCurrentEpochPlugin = {
     id: 'highlightCurrentEpoch',
@@ -42,16 +43,21 @@ const highlightCurrentEpochPlugin = {
         const xAxis = chart.scales.x;
         const yAxis = chart.scales.y;
 
-        // Define which point to highlight (e.g., index 2 which is March)
+        // Find the data point for current epoch
         const dataset = chart.data.datasets[0];
-        const highlightIndex = dataset.data.findIndex((graphValue: {x: string, y: number}) => graphValue.x === String(epoch.value));
+        const highlightIndex = dataset.data.findIndex((graphValue: {x: number, y: number, epoch: string}) => 
+            graphValue.epoch === String(epoch.value)
+        );
+        
+        if (highlightIndex === -1) return; // Exit if no matching point found
+        
         const dataPoint = dataset.data[highlightIndex];
-        const xPos = xAxis.getPixelForValue(highlightIndex);
+        const xPos = xAxis.getPixelForValue(dataPoint.x); // Use dataPoint.x directly since it's now a date
         const yPos = yAxis.getPixelForValue(dataPoint.y);
 
         // Draw vertical dashed line
         ctx.beginPath();
-        ctx.setLineDash([5, 5]); // Creates dashed line pattern
+        ctx.setLineDash([5, 5]);
         ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary-color')
         ctx.lineWidth = 1;
 
@@ -78,8 +84,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Filler,
+  TimeScale,
   highlightCurrentEpochPlugin,
-  //Legend
 )
 
 ChartJS.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--text-color');
@@ -109,14 +115,18 @@ const userCumulativeVotingPower = computed(() => userCumulativeVotingPowerQuery.
 const isFetchingUserCumulativeVotingPower = computed(() => userCumulativeVotingPowerQuery.isLoading.value)
 
 const parsedDataForGraph = computed(() => {
-    if (!userCumulativeVotingPower.value?.length) {
+    if (!userCumulativeVotingPower.value?.length || !initialEpochTimestamp.value) {
         return undefined
     }
 
     return {
         datasets: [
             {
-                data: userCumulativeVotingPower.value.map(votingPowerInEpoch => ({ x: votingPowerInEpoch.epoch.toString(), y: Number(formatUnits(votingPowerInEpoch.power, 18))})),
+                data: userCumulativeVotingPower.value.map(votingPowerInEpoch => ({ 
+                    x: getStartDateOfEpoch(Number(initialEpochTimestamp.value), Number(votingPowerInEpoch.epoch)),
+                    y: Number(formatUnits(votingPowerInEpoch.power, 18)),
+                    epoch: votingPowerInEpoch.epoch.toString()
+                })),
                 pointRadius: 0,
                 pointHoverRadius: 5,
             }
@@ -145,12 +155,53 @@ const chartOptions: ChartOptions<'line'> = {
         },
         grid: {
             tickColor: '#313131',
-            // tickBorderDash: ctx => [1]
         }
     },
     x: {
+        type: 'time',
+        time: {
+            unit: 'day',
+            displayFormats: {
+                day: 'MMM d, yyyy'
+            }
+        },
         grid: {
             tickColor: '#313131'
+        },
+        ticks: {
+            autoSkip: true,
+            callback: function(value, index, ticks) {
+                const dataset = this.chart.data.datasets[0];
+                if (!dataset?.data) return null;
+
+                const formatDate = (date: number | Date) => {
+                    return new Date(date).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                };
+
+                // Always show first tick
+                if (index === 0) {
+                    return formatDate(Number(value));
+                }
+
+                const data = dataset.data as Point[];
+                const currentIndex = data.findIndex(
+                    (d: any) => Math.abs(new Date(d.x).getTime() - new Date(value).getTime()) < 36400000 // Increased tolerance to 10 hours
+                );
+
+                if (currentIndex === -1 || currentIndex === 0) return null;
+
+                const currentY = Number(data[currentIndex]?.y);
+                const prevY = Number(data[currentIndex - 1]?.y);
+
+                const hasChanged = currentY !== prevY
+                return hasChanged ? formatDate(Number(value)) : null;
+            },
+            maxRotation: 45,
+            minRotation: 45
         }
     }
   },
@@ -161,14 +212,9 @@ const chartOptions: ChartOptions<'line'> = {
                 return ` ${tooltipItems.formattedValue} Voting Power`
             },
             title(tooltipItems) {
-                const epoch = tooltipItems[0].label
-                const epochStringified = nth(tooltipItems[0].label)
-                const startDate = initialEpochTimestamp.value ? getStartDateOfEpoch(Number(initialEpochTimestamp.value), Number(epoch)) : undefined
-                let resultString = `${epochStringified} Epoch`
-                if (startDate !== undefined) {
-                    resultString += ` (starting from ${startDate})`
-                }
-                return resultString
+                const dataPoint = tooltipItems[0].raw as { epoch: string };
+                const epochStringified = nth(dataPoint.epoch)
+                return `${epochStringified} Epoch - ${tooltipItems[0].label}`
             },
         }
     },
@@ -195,7 +241,7 @@ const timeTillNextEpoch = computed(() => {
     border: 1px solid var(--border-color);
     overflow: auto;
 
-    max-height: 340px;
+    max-height: 500px;
 
     &__heading {
         display: flex;
@@ -210,7 +256,7 @@ const timeTillNextEpoch = computed(() => {
     }
 
     &__graph-wrapper {
-        height: 100%;
+        height: 300px;
 
         @media (max-width: 800px) {
             width: 700px;

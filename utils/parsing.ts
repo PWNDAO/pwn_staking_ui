@@ -60,9 +60,13 @@ export const getTimeTillNextEpochStringified = (initialEpochTimestamp: number): 
     return formatSeconds(getSecondsTillNextEpoch(initialEpochTimestamp))
 }
 
-export const getStartDateOfEpoch = (initialEpochTimestamp: number, epochNumber: number): string => {
+export const getStartDateOfEpoch = (initialEpochTimestamp: number, epochNumber: number): Date => {
     epochNumber = epochNumber - 1 // epoch starts on 1
-    const date = new Date((initialEpochTimestamp + (epochNumber * SECONDS_IN_EPOCH)) * 1000)
+    return new Date((initialEpochTimestamp + (epochNumber * SECONDS_IN_EPOCH)) * 1000)
+}
+
+export const getStartDateOfEpochFormatted = (initialEpochTimestamp: number, epochNumber: number): string => {
+    const date = getStartDateOfEpoch(initialEpochTimestamp, epochNumber)
     const dateFormatter = new Intl.DateTimeFormat(navigator.language ?? 'en-US')
     return dateFormatter.format(date)
 }

@@ -22,7 +22,7 @@
                         </span>
                         <BaseTooltip
                             :tooltip-text="`You will gain your voting power in next epoch, which will be in ${timeTillNextEpoch}.`"
-                            :border-color="TooltipBorderColor.Orange">
+                            :border-color="TooltipBorderColor.White">
                             <template #trigger>
                                 <img src="/icons/alert-icon-red.svg" alt="alert" class="table-positions__alert-icon" />
                             </template>
@@ -31,6 +31,13 @@
                     <span v-else :class="{'table-positions__td-text--greyed': stake.isVesting}">
                         {{ stake.votingPower }}
                     </span>
+                    <BaseTooltip :tooltip-text="upgradeToStakeTooltipText">
+                        <template #trigger>
+                            <button :disabled="isUpgradingToStake" class="table-positions__upgrade-btn" v-if="stake.isVesting" @click="upgradeToStake(stake.unlockEpoch, DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP)">
+                                {{ isUpgradingToStake ? 'Upgrading...' : 'Upgrade to stake' }}
+                            </button>
+                        </template>
+                    </BaseTooltip>
                 </td>
                 <td class="table-positions__td">
                     <template v-if="stake.votePowerStartsInNextEpoch">
@@ -43,9 +50,11 @@
                     </span>
                 </td>
                 <td class="table-positions__td">
-                    <span>{{ stake.lockUpEpochs }} epochs</span>
+                    <span>
+                        {{ formatSeconds(stake.duration) }}
+                    </span>
                     <span class="table-positions__greyed">
-                        ({{ formatSeconds(stake.duration) }})
+                        ({{ stake.lockUpEpochs }} epochs)
                     </span>
 
                 </td>
@@ -54,9 +63,11 @@
                         Unlocked!
                     </template>
                     <template v-else>
-                        <span>{{ stake.epochsRemaining }} epochs</span>
+                        <span>
+                            {{ formatSeconds(stake.unlocksIn) }}
+                        </span>
                         <span class="table-positions__greyed">
-                            ({{ formatSeconds(stake.unlocksIn) }})
+                            ({{ stake.epochsRemaining }} epochs)
                         </span>
                     </template>
                 </td>
@@ -67,13 +78,16 @@
 
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core';
-import { useAccount } from '@wagmi/vue';
+import { useAccount, useWriteContract } from '@wagmi/vue';
 import { formatUnits, parseUnits } from 'viem';
-import { SECONDS_IN_EPOCH } from '~/constants/contracts';
+import { SECONDS_IN_EPOCH, MIN_STAKE_DURATION_IN_EPOCH } from '~/constants/contracts';
 import { formatSeconds } from '@/utils/date';
 import { TooltipBorderColor } from './BaseTooltip.vue';
 import { useChainIdTypesafe } from '~/constants/chain';
 import { useUserVestedTokens, useCurrentEpoch } from '~/utils/hooks';
+import { wagmiAdapter } from '~/wagmi';
+import { PWN_VESTING_MANAGER } from '~/constants/addresses';
+import { PWN_VESTING_MANAGER_ABI } from '~/constants/abis';
 
 const { address } = useAccount()
 const chainId = useChainIdTypesafe()
@@ -117,6 +131,7 @@ interface TableRowData {
     unlocksIn: number // e.g. 1y 79d 12h
     votePowerStartsInNextEpoch: boolean
     isVesting: boolean
+    unlockEpoch: number
 }
 
 const tableRowsData = computed<TableRowData[]>(() => {
@@ -161,12 +176,13 @@ const tableRowsData = computed<TableRowData[]>(() => {
             epochsRemaining,
             votePowerStartsInNextEpoch: stake.remainingEpochs > stake.lockUpEpochs,
             isVesting: false,
+            unlockEpoch: stake.initialEpoch + stake.lockUpEpochs,
         }
     })
 
     if (vestedTokens.value?.length) {
         for (const [index, vestedToken] of vestedTokens.value.entries()) {
-            const lockUpEpochs = vestedToken.unlockEpoch - vestedToken.initialEpoch
+            const lockUpEpochs = vestedToken.unlockEpoch - vestedToken.initialEpoch - 1 // starting epoch is initialEpoch + 1
             const _currentEpoch = currentEpoch.value ?? 0
             let epochsDelta = _currentEpoch > vestedToken.unlockEpoch ? 0 : vestedToken.unlockEpoch - _currentEpoch
             let epochsRemaining: number
@@ -195,6 +211,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
                 epochsRemaining,
                 votePowerStartsInNextEpoch: false,
                 isVesting: true,
+                unlockEpoch: vestedToken.unlockEpoch,
             })
         }
     }
@@ -302,6 +319,38 @@ const handleSortingIconClick = (newSortingProp: SortingProp) => {
         sortingProp.value = newSortingProp
     }
 }
+
+const DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP = MIN_STAKE_DURATION_IN_EPOCH
+
+const { writeContractAsync: _writeContractUpgradeToStake, isPending: isUpgradingToStake } = useWriteContract()
+const upgradeToStake = async (unlockEpoch: number | bigint, stakeLockUpEpochs: number | bigint) => {
+    return await _writeContractUpgradeToStake({
+        abi: PWN_VESTING_MANAGER_ABI,
+        address: PWN_VESTING_MANAGER[1],
+        functionName: 'upgradeToStake',
+        chainId: 1,
+        args: [BigInt(unlockEpoch), BigInt(stakeLockUpEpochs)]
+    })
+}
+
+const upgradeToStakeTooltipText = computed(() => {
+    if (!currentEpoch.value || !initialEpochTimestamp.value) {
+        return ''
+    }
+
+    const epochWhereStakeWillBeActive = currentEpoch.value + 1 // active from next epoch
+    const stakeActiveDate = getStartDateOfEpochFormatted(Number(initialEpochTimestamp.value), epochWhereStakeWillBeActive)
+
+    const epochWhereStakeUnlocks = epochWhereStakeWillBeActive + DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP
+    const stakeUnlockDate = getStartDateOfEpochFormatted(Number(initialEpochTimestamp.value), epochWhereStakeUnlocks)
+
+    return `Upgrades your vesting position to a stake position that grants voting rights and fee shares (if the DAO enables fees).
+    
+    The new stake will be active starting ${stakeActiveDate}, and will unlock on ${stakeUnlockDate}, after a ${DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP}-epoch lock-up period.
+    
+    For a longer stake lock-up period, please contact us on Discord for assistance. 
+    `
+})
 </script>
 
 <style scoped>
@@ -379,6 +428,39 @@ const handleSortingIconClick = (newSortingProp: SortingProp) => {
         padding-left: 0.25rem;
         font-size: 0.75rem;
         color: var(--grey);
+    }
+
+    &__upgrade-btn {
+        display: inline-flex;
+        align-items: center;
+        height: 2rem;
+        padding: 0 1rem;
+
+        transition: all 0.3s;
+        color: var(--primary-color);
+        background: transparent;
+        border-color: var(--primary-color-1);
+        border-width: 1px;
+        border-style: solid;
+        font-family: var(--font-family-screener);
+
+        margin-left: 1rem;
+
+        &:hover {
+            background: var(--primary-color-2);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+        }
+
+        &:hover {
+            cursor: pointer;
+
+            &:disabled {
+                cursor: not-allowed;
+            }
+        }
     }
 }
 </style>
