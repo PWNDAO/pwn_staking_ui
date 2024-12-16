@@ -6,6 +6,7 @@
     --primary-color-base: 0 255 224; /* #00FFE0 */
     --primary-color: rgb(var(--primary-color-base));
     --primary-color-2: rgb(var(--primary-color-base) / 35%);
+    --primary-color-3: rgb(var(--primary-color-base) / 25%);
     --primary-color-darker: #0F2926;
     --text-color: #F3F1FF;
     --border-color: #434343;
