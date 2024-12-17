@@ -177,7 +177,7 @@ const handleWalletClick = async () => {
   }
 
   &__logo {
-    padding-top: 9px;
+    padding-top: 0.5625rem;
     padding-right: 2rem;
   }
 
