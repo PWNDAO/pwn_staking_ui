@@ -2,7 +2,7 @@
   <header class="header">
     <div class="header__logo-and-menu-items">
       <div class="header__logo">
-        <img src="/images/pwn-dao.svg" alt="PWN DAO" width="72" height="40" />
+        <img src="/images/pwn-dao.svg" alt="PWN DAO" width="73" height="40" />
       </div>
 
       <!-- Desktop menu -->
@@ -165,10 +165,11 @@ const handleWalletClick = async () => {
 <style scoped>
 .header {
   display: flex;
-  padding: 1rem 2.125rem;
+  padding:0 1.5rem;
   justify-content: space-between;
   font-family: var(--font-family-screener);
   align-items: center;
+  height: 80px;
 
   &__logo-and-menu-items {
     display: flex;
@@ -176,8 +177,8 @@ const handleWalletClick = async () => {
   }
 
   &__logo {
-    padding-top: 0.5rem;
-    padding-right: 2.125rem;
+    padding-top: 0.51rem;
+    padding-right: 2rem;
   }
 
   &__menu-items-desktop-wrapper {
