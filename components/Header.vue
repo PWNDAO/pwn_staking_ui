@@ -83,7 +83,7 @@
         @mouseenter="isHoveredOverWallet = true"
         @mouseleave="isHoveredOverWallet = false"
       >
-        <SvgoWalletIcon alt="Wallet" width="20" height="20" class="header__wallet-icon" />
+        <SvgoWalletIcon alt="Wallet" class="header__wallet-icon" />
         <span class="header__connect-wallet-text">{{ walletText }}</span>
       </div>
 
@@ -220,12 +220,16 @@ const handleWalletClick = async () => {
   }
 
   &__connect-wallet {
+    box-sizing: border-box;
     border: 1px solid var(--border-color-gray);
-    padding: 0.5rem;
+    width: 8.5625rem;
     display: flex;
-    column-gap: 0.625rem;
+    justify-content: center;
     align-items: center;
-    font-size: 0.875rem;
+    color: var(--text-color);
+    padding: 0 .5rem;
+    font-size: .75rem;
+    height: 2rem;
 
     &:hover {
       cursor: pointer;
@@ -235,13 +239,15 @@ const handleWalletClick = async () => {
   }
 
   &__connect-wallet-text {
-    padding: 0 0.5rem 0 0;
-    width: 80px;
+    width: 100%;
     text-align: center;
+    padding-left: .5rem;
+    margin-bottom: -2px;
   }
 
   &__wallet-icon {
-    width: 20px;
+    height: 100%;
+    width: 1.35rem;
   }
 
   &__external-link-icon {
