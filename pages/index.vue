@@ -21,7 +21,7 @@
                     </div>
 
                     <div class="homepage__pwn-balance-value">
-                      <BaseSkeletor v-if="isFetchingPwnTokenBalance || isFetchingVestedTokens || isFetchingUserStakes " height="2" />
+                      <BaseSkeletor v-if="isFetchingPwnTokenBalance || isFetchingVestings || isFetchingUserStakes " height="2" />
                       <span v-else>
                         {{ totalPwnTokensFormatted }} PWN
                       </span>
@@ -40,7 +40,7 @@
                         <div class="homepage__box-subtitle">
                             Vested Tokens
                         </div>
-                        <BaseSkeletor v-if="isFetchingVestedTokens" height="2" />
+                        <BaseSkeletor v-if="isFetchingVestings" height="2" />
                         <div v-else class="homepage__box-value">{{ vestedTokensAmountFormatted }}</div>
                     </div>
 
@@ -84,16 +84,16 @@
             <h3 class="homepage__positions-heading">Positions ({{ stakesCount }})</h3>
             <TablePositions />
         </div>
-        <div v-else-if="isFetchingUserStakes" class="homepage__table-positions-loader">
+        <div v-if="isFetchingUserStakes || isFetchingVestings" class="homepage__table-positions-loader">
             <BaseSkeletor height="2" />
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { useAccount, useChainId } from '@wagmi/vue';
+import { useAccount } from '@wagmi/vue';
 import { formatUnits } from 'viem';
-import { getChainIdToToggleTo, toggleActiveChain, useChainIdTypesafe, type SupportedChain } from '~/constants/chain';
+import { getChainIdToToggleTo, toggleActiveChain, useChainIdTypesafe } from '~/constants/chain';
 import { SECONDS_IN_EPOCH } from '~/constants/contracts';
 import { useUserStakesWithVotingPower } from '~/utils/hooks';
 import { calculateUserVotingMultiplier } from '~/utils/parsing';
@@ -121,17 +121,20 @@ const pwnTokenBalanceFormatted = computed(() => {
 })
 const isFetchingPwnTokenBalance = computed(() => pwnTokenBalanceQuery.isLoading.value)
 
-const stakes = useUserStakes(address, chainId)
-const stakesCount = computed(() => stakes.data.value?.length ?? 0)
+const stakesQuery = useUserStakes(address, chainId)
+const isFetchingUserStakes = computed(() => stakesQuery.isLoading.value)
+const vestingsQuery = useUserVestedTokens(address, chainId)
+const isFetchingVestings = computed(() => vestingsQuery.isLoading.value)
+
+const stakesCount = computed(() => (stakesQuery.data.value?.length ?? 0) + (vestingsQuery.data.value?.length ?? 0))
 const hasAnyStake = computed(() => stakesCount.value > 0)
 
-// TODO check if this returns correct balances
 const stakedTokens = computed(() => {
     if (!hasAnyStake.value) {
         return undefined
     }
 
-    return stakes.data.value?.reduce((sum, stake) => sum + stake.amount, 0n)
+    return stakesQuery.data.value?.reduce((sum, stake) => sum + stake.amount, 0n)
 })
 const stakedTokensFormatted = computed(() => {
     if (stakedTokens.value === undefined || stakedTokens.value === 0n) {
@@ -140,8 +143,6 @@ const stakedTokensFormatted = computed(() => {
 
     return formatUnits(stakedTokens.value, 18)
 })
-const isFetchingUserStakes = computed(() => stakes.isLoading.value)
-
 const currentEpochQuery = useCurrentEpoch(chainId)
 const currentEpoch = computed(() => {
     if (currentEpochQuery.data?.value === undefined) {
@@ -201,15 +202,22 @@ const votingMultiplierFormatted = computed(() => {
 })
 
 const nextUnlockAt = computed(() => {
-    if (stakes.data.value === undefined || epoch.value === undefined || secondsTillNextEpoch.value === undefined) {
+    if (epoch.value === undefined || secondsTillNextEpoch.value === undefined) {
         return undefined
     }
 
     let lowestRemainingEpochsForUnlock: number | undefined = undefined
-    for (const stake of stakes.data.value) {
+    for (const stake of stakesQuery.data.value ?? []) {
         const epochWhereUnlocked = stake.initialEpoch + stake.lockUpEpochs
         if (epochWhereUnlocked > Number(epoch.value) && (lowestRemainingEpochsForUnlock === undefined || stake.remainingEpochs < lowestRemainingEpochsForUnlock)) {
             lowestRemainingEpochsForUnlock = stake.remainingEpochs
+        }
+    }
+
+    for (const vesting of vestingsQuery.data.value ?? []) {
+        let remainingEpochs = vesting.unlockEpoch - Number(epoch.value)
+        if (vesting.unlockEpoch > Number(epoch.value) && (lowestRemainingEpochsForUnlock === undefined || remainingEpochs < lowestRemainingEpochsForUnlock)) {
+            lowestRemainingEpochsForUnlock = remainingEpochs
         }
     }
 
@@ -228,15 +236,13 @@ const nextUnlockFormatted = computed(() => {
     return formatSeconds(nextUnlockAt.value)
 })
 
-const vestedTokensQuery = useUserVestedTokens(address, chainId)
-const isFetchingVestedTokens = computed(() => vestedTokensQuery.isLoading.value)
 const vestedTokensAmount = computed(() => {
-    if (!vestedTokensQuery.data?.value?.length) {
+    if (!vestingsQuery.data?.value?.length) {
         return undefined 
     }
 
     let totalAmount = 0n
-    for (const vestedToken of vestedTokensQuery.data.value) {
+    for (const vestedToken of vestingsQuery.data.value) {
         totalAmount += vestedToken.amount
     }
     return totalAmount
