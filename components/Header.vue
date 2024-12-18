@@ -247,7 +247,9 @@ const handleWalletClick = async () => {
 
   &__wallet-icon {
     height: 100%;
-    width: 1.35rem;
+    min-width: 17px;
+    max-width: 17px;
+    margin-bottom: 0;
   }
 
   &__external-link-icon {
