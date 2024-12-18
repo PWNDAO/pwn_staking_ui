@@ -2,7 +2,7 @@
   <header class="header">
     <div class="header__logo-and-menu-items">
       <div class="header__logo">
-        <img src="/images/pwn-dao.svg" alt="PWN DAO" width="72" height="40" />
+        <img src="/images/pwn-dao.svg" alt="PWN DAO" width="73" height="40" />
       </div>
 
       <!-- Desktop menu -->
@@ -83,7 +83,7 @@
         @mouseenter="isHoveredOverWallet = true"
         @mouseleave="isHoveredOverWallet = false"
       >
-        <SvgoWalletIcon alt="Wallet" width="20" height="20" class="header__wallet-icon" />
+        <SvgoWalletIcon alt="Wallet" class="header__wallet-icon" />
         <span class="header__connect-wallet-text">{{ walletText }}</span>
       </div>
 
@@ -165,10 +165,11 @@ const handleWalletClick = async () => {
 <style scoped>
 .header {
   display: flex;
-  padding: 1rem 2.125rem;
+  padding:0 1.5rem;
   justify-content: space-between;
   font-family: var(--font-family-screener);
   align-items: center;
+  height: 80px;
 
   &__logo-and-menu-items {
     display: flex;
@@ -176,8 +177,8 @@ const handleWalletClick = async () => {
   }
 
   &__logo {
-    padding-top: 0.5rem;
-    padding-right: 2.125rem;
+    padding-top: 0.5625rem;
+    padding-right: 2rem;
   }
 
   &__menu-items-desktop-wrapper {
@@ -219,12 +220,16 @@ const handleWalletClick = async () => {
   }
 
   &__connect-wallet {
+    box-sizing: border-box;
     border: 1px solid var(--border-color-gray);
-    padding: 0.5rem;
+    width: 8.5625rem;
     display: flex;
-    column-gap: 0.625rem;
+    justify-content: center;
     align-items: center;
-    font-size: 0.875rem;
+    color: var(--text-color);
+    padding: 0 .5rem;
+    font-size: .75rem;
+    height: 2rem;
 
     &:hover {
       cursor: pointer;
@@ -234,13 +239,17 @@ const handleWalletClick = async () => {
   }
 
   &__connect-wallet-text {
-    padding: 0 0.5rem 0 0;
-    width: 80px;
+    width: 100%;
     text-align: center;
+    padding-left: .5rem;
+    margin-bottom: -2px;
   }
 
   &__wallet-icon {
-    width: 20px;
+    height: 100%;
+    min-width: 17px;
+    max-width: 17px;
+    margin-bottom: 0;
   }
 
   &__external-link-icon {
