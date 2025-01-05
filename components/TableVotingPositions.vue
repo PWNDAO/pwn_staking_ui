@@ -50,26 +50,23 @@
                     </span>
                 </td>
                 <td class="table-positions__td">
-                    <span>
-                        {{ formatSeconds(stake.duration) }}
-                    </span>
-                    <span class="table-positions__greyed">
-                        ({{ stake.lockUpEpochs }} epochs)
-                    </span>
-
-                </td>
-                <td class="table-positions__td">
-                    <template class="table-positions__unlocked-text" v-if="stake.unlocksIn === 0">
-                        Unlocked!
-                    </template>
-                    <template v-else>
+                <template class="table-positions__unlocked-text" v-if="stake.unlocksIn === 0">
+                  Unlocked!
+                </template>
+                <template v-else>
                         <span>
                             {{ formatSeconds(stake.unlocksIn) }}
                         </span>
-                        <span class="table-positions__greyed">
+                  <span class="table-positions__greyed">
                             ({{ stake.epochsRemaining }} epochs)
                         </span>
-                    </template>
+                </template>
+              </td>
+
+                <td class="table-positions__td">
+                    <span>
+                      {{shortenAddress(stake.owner)}}
+                    </span>
                 </td>
             </tr>
         </tbody>
@@ -84,21 +81,26 @@ import { SECONDS_IN_EPOCH, MIN_STAKE_DURATION_IN_EPOCH } from '~/constants/contr
 import { formatSeconds } from '@/utils/date';
 import { TooltipBorderColor } from './BaseTooltip.vue';
 import { useChainIdTypesafe } from '~/constants/chain';
-import { useUserVestedTokens, useCurrentEpoch } from '~/utils/hooks';
+import { useCurrentEpoch, useUserStakesWithVotingPower} from '~/utils/hooks';
 import { wagmiAdapter } from '~/wagmi';
 import { PWN_VESTING_MANAGER } from '~/constants/addresses';
 import { PWN_VESTING_MANAGER_ABI } from '~/constants/abis';
+import type {Address} from "abitype";
+import {shortenAddress} from "../utils/web3";
 
 const { address } = useAccount()
 const chainId = useChainIdTypesafe()
 
 const stakes = useUserStakes(address, chainId)
 
-const vestedTokensQuery = useUserVestedTokens(address, chainId)
-const vestedTokens = computed(() => vestedTokensQuery.data?.value)
-
 const currentEpochQuery = useCurrentEpoch(chainId)
 const currentEpoch = computed(() => currentEpochQuery.data?.value)
+
+const userStakesWithVotingPowerQuery = useUserStakesWithVotingPower(address, currentEpoch, chainId)
+const userStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.data.value)
+const userStakesWithVotingPowerFiltered = computed(() => userStakesWithVotingPower.value?.filter( stake => {
+  return address.value !== stake.owner
+}))
 
 const initialEpochTimestampQuery = useInitialEpochTimestamp(chainId)
 const initialEpochTimestamp = computed(() => initialEpochTimestampQuery.data.value)
@@ -126,12 +128,12 @@ interface TableRowData {
     votingPower: string // formatted by decimals already
     multiplier: number // e.g. x1.3
     lockUpEpochs: number // e.g. 39
-    duration: number // e.g. 3y
     epochsRemaining: number // e.g. 15.4
     unlocksIn: number // e.g. 1y 79d 12h
     votePowerStartsInNextEpoch: boolean
     isVesting: boolean
     unlockEpoch: number
+    owner: Address
 }
 
 const tableRowsData = computed<TableRowData[]>(() => {
@@ -139,7 +141,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
         return []
     }
 
-    const userStakes: TableRowData[] = stakes.data.value.map(stake => {
+    const userStakes: TableRowData[] = userStakesWithVotingPowerFiltered?.value?.map(stake => {
         const formattedStakedAmount = formatUnits(stake.amount, 18)
 
         const multiplier = getMultiplierForLockUpEpochs(Math.min(stake.remainingEpochs, stake.lockUpEpochs))
@@ -171,51 +173,14 @@ const tableRowsData = computed<TableRowData[]>(() => {
             votingPower: String(Math.floor(Number(formattedStakedAmount) * multiplier)),
             multiplier,
             lockUpEpochs: stake.lockUpEpochs,
-            duration: stake.lockUpEpochs * SECONDS_IN_EPOCH,
             unlocksIn,
             epochsRemaining,
             votePowerStartsInNextEpoch: stake.remainingEpochs > stake.lockUpEpochs,
             isVesting: false,
             unlockEpoch: stake.initialEpoch + stake.lockUpEpochs,
+            owner: stake.owner,
         }
-    })
-
-    if (vestedTokens.value?.length) {
-        for (const [index, vestedToken] of vestedTokens.value.entries()) {
-            const lockUpEpochs = vestedToken.unlockEpoch - vestedToken.initialEpoch - 1 // starting epoch is initialEpoch + 1
-            const _currentEpoch = currentEpoch.value ?? 0
-            let epochsDelta = _currentEpoch > vestedToken.unlockEpoch ? 0 : vestedToken.unlockEpoch - _currentEpoch
-            let epochsRemaining: number
-            let unlocksIn: number
-            if (epochsDelta === 1) {
-                // add fractional part to the epochsRemaining
-                epochsRemaining = Number((secondsTillNextEpoch.value! / SECONDS_IN_EPOCH).toFixed(1))
-                unlocksIn = secondsTillNextEpoch.value!
-            } else if (epochsDelta <= 0) {
-                epochsRemaining = 0
-                unlocksIn = 0
-            } else {
-                // add fractional part to the epochsRemaining
-                epochsRemaining = (epochsDelta - 1) + Number((secondsTillNextEpoch.value! / SECONDS_IN_EPOCH).toFixed(1))
-                unlocksIn = secondsTillNextEpoch.value! +  ((epochsDelta - 1) * SECONDS_IN_EPOCH)
-            }
-            userStakes.push({
-                id: BigInt(index + 1), // arbitrary number as vestings does not have stake id
-                idText: `Vesting ${index + 1}`,
-                amount: formatUnits(vestedToken.amount, 18),
-                votingPower: '0',
-                multiplier: 0,
-                lockUpEpochs,
-                duration: lockUpEpochs * SECONDS_IN_EPOCH,
-                unlocksIn,
-                epochsRemaining,
-                votePowerStartsInNextEpoch: false,
-                isVesting: true,
-                unlockEpoch: vestedToken.unlockEpoch,
-            })
-        }
-    }
-
+    }) || []
     return userStakes
 })
 
@@ -241,15 +206,15 @@ const COLUMNS_DEFINITION = [
         width: '11%',
     },
     {
-        id: 'duration',
-        text: 'Duration',
-        width: '20%',
-    },
-    {
         id: 'unlocksIn',
         text: 'Unlocks in',
         width: '20%',
     },
+  {
+    id: 'stakeOwner',
+    text: 'Owner of Stake',
+    width: '20%',
+  },
 ] as const
 
 type SortingProp = typeof COLUMNS_DEFINITION[number]['id']
@@ -294,11 +259,11 @@ const sortedTableRowsData = computed(() => {
                     return a.multiplier > b.multiplier ? 1 : -1
                 }
             }
-            case 'duration': {
+            case 'stakeOwner': {
                 if (sortingDirection.value === 'desc') {
-                    return a.duration > b.duration ? -1 : 1
+                    return a.owner > b.owner ? -1 : 1
                 } else {
-                    return a.duration > b.duration ? 1 : -1
+                    return a.owner > b.owner ? 1 : -1
                 }
             }
             case 'unlocksIn': {
@@ -345,10 +310,10 @@ const upgradeToStakeTooltipText = computed(() => {
     const stakeUnlockDate = getStartDateOfEpochFormatted(Number(initialEpochTimestamp.value), epochWhereStakeUnlocks)
 
     return `Upgrades your vesting position to a stake position that grants voting rights and fee shares (if the DAO enables fees).
-    
+
     The new stake will be active starting ${stakeActiveDate}, and will unlock on ${stakeUnlockDate}, after a ${DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP}-epoch lock-up period.
-    
-    For a longer stake lock-up period, please contact us on Discord for assistance. 
+
+    For a longer stake lock-up period, please contact us on Discord for assistance.
     `
 })
 </script>

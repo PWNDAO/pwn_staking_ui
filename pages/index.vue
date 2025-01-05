@@ -81,12 +81,17 @@
         <GraphCumulativeVotingPower />
 
         <div v-if="hasAnyStake" class="homepage__positions">
-            <h3 class="homepage__positions-heading">Positions ({{ stakesCount }})</h3>
-            <TablePositions />
+            <h3 class="homepage__positions-heading">Owned Positions ({{ stakesCount }})</h3>
+            <TableOwnedPositions />
         </div>
         <div v-if="isFetchingUserStakes || isFetchingVestings" class="homepage__table-positions-loader">
             <BaseSkeletor height="2" />
         </div>
+      <div v-if="hasAnyVotingDelegation" class="homepage__positions">
+        <h3 class="homepage__positions-heading">Voting Positions ({{votingDelegationCount}})</h3>
+        <TableVotingPositions/>
+      </div>
+
     </div>
 </template>
 
@@ -183,6 +188,14 @@ const isFetchingVotingPower = computed(() => votingPowerQuery.isLoading.value)
 
 const userStakesWithVotingPowerQuery = useUserStakesWithVotingPower(address, epoch, chainId)
 const userStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.data.value)
+
+const userStakesWithVotingPowerFiltered = computed(() => userStakesWithVotingPower.value?.filter( stake => {
+  return address.value !== stake.owner
+}))
+const votingDelegationCount = computed(() => userStakesWithVotingPowerFiltered.value?.length ?? 0)
+const hasAnyVotingDelegation = computed(() => votingDelegationCount.value > 0)
+
+
 const isFetchingUserStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.isLoading.value)
 
 const votingMultiplier = computed(() => {
@@ -238,7 +251,7 @@ const nextUnlockFormatted = computed(() => {
 
 const vestedTokensAmount = computed(() => {
     if (!vestingsQuery.data?.value?.length) {
-        return undefined 
+        return undefined
     }
 
     let totalAmount = 0n
