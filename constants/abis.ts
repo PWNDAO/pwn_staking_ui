@@ -130,6 +130,40 @@ export const VE_PWN_TOKEN_ABI = [
     "stateMutability": "view",
     "type": "function"
   },
+  {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "stakeId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "stakeBeneficiary",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "additionalAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "additionalEpochs",
+                "type": "uint256"
+            }
+        ],
+        "name": "increaseStake",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "newStakeId",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
 ] as const
 
 export const EPOCH_CLOCK_ABI = [
@@ -174,7 +208,7 @@ export const PWN_VESTING_MANAGER_ABI = [
         }
      ],
      "outputs":[
-        
+
      ],
      "stateMutability":"nonpayable"
   },

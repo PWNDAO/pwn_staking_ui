@@ -1,5 +1,9 @@
 <template>
     <div class="homepage">
+      <button
+          @click="openModal(131n)">
+        Open Modal
+      </button>
         <div class="homepage__epoch-input" v-if="showTestingTopBar">
             <template v-if="showEpochSwitcher">
                 <div>Real epoch in contract: {{ currentEpoch }}</div>
@@ -82,12 +86,13 @@
 
         <div v-if="hasAnyStake" class="homepage__positions">
             <h3 class="homepage__positions-heading">Positions ({{ stakesCount }})</h3>
-            <TablePositions />
+            <TablePositions/>
         </div>
         <div v-if="isFetchingUserStakes || isFetchingVestings" class="homepage__table-positions-loader">
             <BaseSkeletor height="2" />
         </div>
     </div>
+    <IncreaseStakeModal/>
 </template>
 
 <script setup lang="ts">
@@ -100,6 +105,7 @@ import { calculateUserVotingMultiplier } from '~/utils/parsing';
 
 const { address } = useAccount()
 const chainId = useChainIdTypesafe()
+const {openModal} = useIncreaseStakeModal()
 
 const { epoch, setEpoch } = useManuallySetEpoch(chainId)
 const epochBigInt = computed(() => {
@@ -238,7 +244,7 @@ const nextUnlockFormatted = computed(() => {
 
 const vestedTokensAmount = computed(() => {
     if (!vestingsQuery.data?.value?.length) {
-        return undefined 
+        return undefined
     }
 
     let totalAmount = 0n
