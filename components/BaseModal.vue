@@ -90,7 +90,7 @@ const props = withDefaults(defineProps<Props>(), {
   customHeadingStyles: () => ({}),
 })
 
-const emit = defineEmits<{(e: 'update:isOpen', isOpen: boolean), (e: 'is-closed', isOpen: boolean) }>()
+const emit = defineEmits<{(e: 'update:isOpen', isOpen: boolean): any, (e: 'is-closed', isOpen: boolean): any }>()
 
 defineSlots<{
   // slots return "any" atm as described in official docs
@@ -118,7 +118,7 @@ const isOpenLocal = computed({
   set: (value: boolean): void => emit('update:isOpen', value),
 })
 
-const isClickedOutside = (event): boolean => event.target !== event.currentTarget
+const isClickedOutside = (event: any): boolean => event.target !== event.currentTarget
 
 const close = (event: MouseEvent): void => {
   if (!props.isClosable) return
