@@ -31,13 +31,6 @@
                     <span v-else :class="{'table-positions__td-text--greyed': stake.isVesting}">
                         {{ stake.votingPower }}
                     </span>
-                    <BaseTooltip :tooltip-text="upgradeToStakeTooltipText">
-                        <template #trigger>
-                            <button :disabled="isUpgradingToStake" class="table-positions__upgrade-btn" v-if="stake.isVesting" @click="upgradeToStake(stake.unlockEpoch, DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP)">
-                                {{ isUpgradingToStake ? 'Upgrading...' : 'Upgrade to stake' }}
-                            </button>
-                        </template>
-                    </BaseTooltip>
                 </td>
                 <td class="table-positions__td">
                     <template v-if="stake.votePowerStartsInNextEpoch">
@@ -64,9 +57,15 @@
               </td>
 
                 <td class="table-positions__td">
-                    <span>
-                      {{shortenAddress(stake.owner)}}
+                  <BaseTooltip
+                      is-interactive
+                      :tooltip-text="stake.owner">
+                    <template #trigger>
+                      <span>
+                       {{ shortenAddress(stake.owner) }}
                     </span>
+                    </template>
+                  </BaseTooltip>
                 </td>
             </tr>
         </tbody>
@@ -284,38 +283,6 @@ const handleSortingIconClick = (newSortingProp: SortingProp) => {
         sortingProp.value = newSortingProp
     }
 }
-
-const DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP = MIN_STAKE_DURATION_IN_EPOCH
-
-const { writeContractAsync: _writeContractUpgradeToStake, isPending: isUpgradingToStake } = useWriteContract()
-const upgradeToStake = async (unlockEpoch: number | bigint, stakeLockUpEpochs: number | bigint) => {
-    return await _writeContractUpgradeToStake({
-        abi: PWN_VESTING_MANAGER_ABI,
-        address: PWN_VESTING_MANAGER[1],
-        functionName: 'upgradeToStake',
-        chainId: 1,
-        args: [BigInt(unlockEpoch), BigInt(stakeLockUpEpochs)]
-    })
-}
-
-const upgradeToStakeTooltipText = computed(() => {
-    if (!currentEpoch.value || !initialEpochTimestamp.value) {
-        return ''
-    }
-
-    const epochWhereStakeWillBeActive = currentEpoch.value + 1 // active from next epoch
-    const stakeActiveDate = getStartDateOfEpochFormatted(Number(initialEpochTimestamp.value), epochWhereStakeWillBeActive)
-
-    const epochWhereStakeUnlocks = epochWhereStakeWillBeActive + DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP
-    const stakeUnlockDate = getStartDateOfEpochFormatted(Number(initialEpochTimestamp.value), epochWhereStakeUnlocks)
-
-    return `Upgrades your vesting position to a stake position that grants voting rights and fee shares (if the DAO enables fees).
-
-    The new stake will be active starting ${stakeActiveDate}, and will unlock on ${stakeUnlockDate}, after a ${DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP}-epoch lock-up period.
-
-    For a longer stake lock-up period, please contact us on Discord for assistance.
-    `
-})
 </script>
 
 <style scoped>

@@ -50,9 +50,17 @@
                     </span>
                 </td>
                 <td class="table-positions__td">
-                    <span>
+                  <BaseTooltip
+                      v-if="stake.votingDelegate"
+                      is-interactive
+                      :tooltip-text="stake.votingDelegate">
+                    <template #trigger>
+                      <span>
                        {{ shortenAddress(stake.votingDelegate) }}
                     </span>
+                    </template>
+                  </BaseTooltip>
+                  <span v-else> --- </span>
                 </td>
                 <td class="table-positions__td">
                     <template class="table-positions__unlocked-text" v-if="stake.unlocksIn === 0">
@@ -130,7 +138,7 @@ interface TableRowData {
     votePowerStartsInNextEpoch: boolean
     isVesting: boolean
     unlockEpoch: number
-    votingDelegate: Address
+    votingDelegate?: Address
 }
 
 const stakeIds = computed(() => stakes.data.value?.map(stake => stake.stakeId) ?? [])
@@ -214,7 +222,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
                 votePowerStartsInNextEpoch: false,
                 isVesting: true,
                 unlockEpoch: vestedToken.unlockEpoch,
-                votingDelegate: address.value!,
+                votingDelegate: undefined,
             })
         }
     }
@@ -298,11 +306,13 @@ const sortedTableRowsData = computed(() => {
                 }
             }
             case 'delegate': {
-              //todo: fix this
+                if (!a.votingDelegate || !b.votingDelegate) {
+                    return a.votingDelegate ? -1 : 1
+                }
                 if (sortingDirection.value === 'desc') {
-                    return a.duration > b.duration ? -1 : 1
+                    return a.votingDelegate > b.votingDelegate ? -1 : 1
                 } else {
-                    return a.duration > b.duration ? 1 : -1
+                    return a.votingDelegate > b.votingDelegate ? 1 : -1
                 }
             }
             case 'unlocksIn': {

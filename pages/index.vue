@@ -88,7 +88,7 @@
             <BaseSkeletor height="2" />
         </div>
       <div v-if="hasAnyVotingDelegation" class="homepage__positions">
-        <h3 class="homepage__positions-heading">Voting Positions ({{votingDelegationCount}})</h3>
+        <h3 class="homepage__positions-heading">Voting Power Only Positions ({{votingDelegationCount}})</h3>
         <TableVotingPositions/>
       </div>
 
