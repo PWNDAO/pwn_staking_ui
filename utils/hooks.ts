@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/vue-query";
-import { erc20Abi, parseAbiItem, type Address } from "viem";
+import {erc20Abi, parseAbiItem, type Address, parseEventLogs} from "viem";
 import { getLogs } from "viem/actions";
 import { getClient, readContract } from "@wagmi/vue/actions";
 import { EPOCH_CLOCK_ABI, VE_PWN_TOKEN_ABI } from "~/constants/abis";
@@ -20,6 +20,32 @@ export const useUserPwnBalance = (walletAddress: Ref<Address | undefined>, chain
                 args: [walletAddress.value!],
             })
         }
+    })
+}
+
+export function useAllBeneficiaries(stakeIds: bigint[], chainId: Ref<SupportedChain>) {
+    return useQuery({
+        queryKey: ['allBeneficiaries', stakeIds],
+        queryFn: async () => {
+            const client = getClient(wagmiAdapter.wagmiConfig)
+            const logs = await getLogs(client!, {
+                address: VE_PWN_TOKEN[chainId.value],
+                event: parseAbiItem('event StakePowerDelegated(uint256 indexed stakeId, address indexed originalBeneficiary, address indexed newBeneficiary)'),
+                fromBlock: 0n,
+            })
+
+            // Create a map of stakeId to latest beneficiary
+            const beneficiaryMap = new Map<bigint, string>()
+
+            for (const log of logs) {
+                if (stakeIds.includes(log.args.stakeId!)) {
+                    beneficiaryMap.set(log.args.stakeId!, log.args.newBeneficiary || '')
+                }
+            }
+
+            return beneficiaryMap
+        },
+        enabled: stakeIds.length > 0
     })
 }
 
@@ -155,7 +181,7 @@ export const useUserCumulativeVotingPowerSummary = (walletAddress: Ref<Address |
             const strippedParsedStakerPowers = parsedStakerPowers.filter((stakerPower, index) => {
                 // Keep the number if it's not zero
                 if (stakerPower.power !== 0n) return true;
-                
+
                 // If it's zero, check if there's a non-zero number ahead
                 return parsedStakerPowers.slice(index + 1).some(_stakerPower => _stakerPower.power !== 0n);
             });
