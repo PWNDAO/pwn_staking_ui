@@ -43,6 +43,17 @@
                     </span>
                 </td>
                 <td class="table-positions__td">
+                <BaseTooltip
+                    is-interactive
+                    :tooltip-text="stake.owner">
+                  <template #trigger>
+                      <span>
+                       {{ shortenAddress(stake.owner) }}
+                    </span>
+                  </template>
+                </BaseTooltip>
+              </td>
+                <td class="table-positions__td">
                 <template class="table-positions__unlocked-text" v-if="stake.unlocksIn === 0">
                   Unlocked!
                 </template>
@@ -55,18 +66,6 @@
                         </span>
                 </template>
               </td>
-
-                <td class="table-positions__td">
-                  <BaseTooltip
-                      is-interactive
-                      :tooltip-text="stake.owner">
-                    <template #trigger>
-                      <span>
-                       {{ shortenAddress(stake.owner) }}
-                    </span>
-                    </template>
-                  </BaseTooltip>
-                </td>
             </tr>
         </tbody>
     </table>
@@ -205,15 +204,15 @@ const COLUMNS_DEFINITION = [
         width: '11%',
     },
     {
+      id: 'stakeOwner',
+      text: 'Owner of Stake',
+      width: '20%',
+    },
+    {
         id: 'unlocksIn',
         text: 'Unlocks in',
         width: '20%',
     },
-  {
-    id: 'stakeOwner',
-    text: 'Owner of Stake',
-    width: '20%',
-  },
 ] as const
 
 type SortingProp = typeof COLUMNS_DEFINITION[number]['id']
