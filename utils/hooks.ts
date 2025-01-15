@@ -7,6 +7,8 @@ import { EPOCH_CLOCK, PWN_TOKEN, PWN_VESTING_MANAGER, STAKED_PWN_NFT, VE_PWN_TOK
 import { getChainIdTypesafe, type SupportedChain } from "~/constants/chain";
 import type { PowerInEpoch, StakeDetail, VestingDetail } from "~/types/contractResults";
 import { wagmiAdapter } from "~/wagmi";
+import { zeroAddress } from 'viem'
+
 
 export const useUserPwnBalance = (walletAddress: Ref<Address | undefined>, chainId: Ref<SupportedChain>) => {
     return useQuery({
@@ -23,16 +25,41 @@ export const useUserPwnBalance = (walletAddress: Ref<Address | undefined>, chain
     })
 }
 
-export function useAllBeneficiaries(stakeIds: bigint[], chainId: Ref<SupportedChain>) {
+export function useAllBeneficiaries(address: Ref<Address | undefined>, stakeIds: bigint[], chainId: Ref<SupportedChain>) {
     return useQuery({
         queryKey: ['allBeneficiaries', stakeIds],
         queryFn: async () => {
             const client = getClient(wagmiAdapter.wagmiConfig)
-            const logs = await getLogs(client!, {
+
+            // needs to be fetched because of the initial setup of voting power delegator
+            const logsInitialBeneficiary = await getLogs(client!, {
                 address: VE_PWN_TOKEN[chainId.value],
                 event: parseAbiItem('event StakePowerDelegated(uint256 indexed stakeId, address indexed originalBeneficiary, address indexed newBeneficiary)'),
+                args: {
+                    originalBeneficiary: zeroAddress,
+                },
                 fromBlock: 0n,
             })
+
+            const logsOriginalBeneficiary = await getLogs(client!, {
+                address: VE_PWN_TOKEN[chainId.value],
+                event: parseAbiItem('event StakePowerDelegated(uint256 indexed stakeId, address indexed originalBeneficiary, address indexed newBeneficiary)'),
+                args: {
+                    originalBeneficiary: address.value,
+                },
+                fromBlock: 0n,
+            })
+            const logsNewBeneficiary = await getLogs(client!, {
+                address: VE_PWN_TOKEN[chainId.value],
+                event: parseAbiItem('event StakePowerDelegated(uint256 indexed stakeId, address indexed originalBeneficiary, address indexed newBeneficiary)'),
+                args: {
+                    newBeneficiary: address.value,
+                },
+                fromBlock: 0n,
+            })
+
+            const logs = logsInitialBeneficiary.concat(logsOriginalBeneficiary).concat(logsNewBeneficiary)
+            logs.sort((a, b) => Number(a.blockNumber) - Number(b.blockNumber))
 
             // Create a map of stakeId to latest beneficiary
             const beneficiaryMap = new Map<bigint, string>()
