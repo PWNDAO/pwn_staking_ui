@@ -50,13 +50,17 @@
                     </span>
                 </td>
                 <td class="table-positions__td">
-                    <span>
-                        {{ formatSeconds(stake.duration) }}
+                  <BaseTooltip
+                      v-if="stake.votingDelegate"
+                      is-interactive
+                      :tooltip-text="stake.votingDelegate">
+                    <template #trigger>
+                      <span>
+                       {{ shortenAddress(stake.votingDelegate) }}
                     </span>
-                    <span class="table-positions__greyed">
-                        ({{ stake.lockUpEpochs }} epochs)
-                    </span>
-
+                    </template>
+                  </BaseTooltip>
+                  <span v-else> --- </span>
                 </td>
                 <td class="table-positions__td">
                     <template class="table-positions__unlocked-text" v-if="stake.unlocksIn === 0">
@@ -84,10 +88,12 @@ import { SECONDS_IN_EPOCH, MIN_STAKE_DURATION_IN_EPOCH } from '~/constants/contr
 import { formatSeconds } from '@/utils/date';
 import { TooltipBorderColor } from './BaseTooltip.vue';
 import { useChainIdTypesafe } from '~/constants/chain';
-import { useUserVestedTokens, useCurrentEpoch } from '~/utils/hooks';
+import {useUserVestedTokens, useCurrentEpoch, useAllBeneficiaries} from '~/utils/hooks';
 import { wagmiAdapter } from '~/wagmi';
 import { PWN_VESTING_MANAGER } from '~/constants/addresses';
 import { PWN_VESTING_MANAGER_ABI } from '~/constants/abis';
+import type {Address} from "abitype";
+import {shortenAddress} from "../utils/web3";
 
 const { address } = useAccount()
 const chainId = useChainIdTypesafe()
@@ -132,13 +138,16 @@ interface TableRowData {
     votePowerStartsInNextEpoch: boolean
     isVesting: boolean
     unlockEpoch: number
+    votingDelegate?: Address
 }
+
+const stakeIds = computed(() => stakes.data.value?.map(stake => stake.stakeId) ?? [])
+const logs = useAllBeneficiaries(address, stakeIds.value, chainId)
 
 const tableRowsData = computed<TableRowData[]>(() => {
     if (stakes.data.value === undefined || secondsTillNextEpoch.value === undefined) {
         return []
     }
-
     const userStakes: TableRowData[] = stakes.data.value.map(stake => {
         const formattedStakedAmount = formatUnits(stake.amount, 18)
 
@@ -177,6 +186,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
             votePowerStartsInNextEpoch: stake.remainingEpochs > stake.lockUpEpochs,
             isVesting: false,
             unlockEpoch: stake.initialEpoch + stake.lockUpEpochs,
+            votingDelegate: logs?.data?.value?.get(stake.stakeId) as Address ?? address.value!
         }
     })
 
@@ -212,6 +222,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
                 votePowerStartsInNextEpoch: false,
                 isVesting: true,
                 unlockEpoch: vestedToken.unlockEpoch,
+                votingDelegate: undefined,
             })
         }
     }
@@ -241,8 +252,8 @@ const COLUMNS_DEFINITION = [
         width: '11%',
     },
     {
-        id: 'duration',
-        text: 'Duration',
+        id: 'delegate',
+        text: 'Voting Power Delegate',
         width: '20%',
     },
     {
@@ -294,11 +305,14 @@ const sortedTableRowsData = computed(() => {
                     return a.multiplier > b.multiplier ? 1 : -1
                 }
             }
-            case 'duration': {
+            case 'delegate': {
+                if (!a.votingDelegate || !b.votingDelegate) {
+                    return a.votingDelegate ? -1 : 1
+                }
                 if (sortingDirection.value === 'desc') {
-                    return a.duration > b.duration ? -1 : 1
+                    return a.votingDelegate > b.votingDelegate ? -1 : 1
                 } else {
-                    return a.duration > b.duration ? 1 : -1
+                    return a.votingDelegate > b.votingDelegate ? 1 : -1
                 }
             }
             case 'unlocksIn': {
@@ -345,10 +359,10 @@ const upgradeToStakeTooltipText = computed(() => {
     const stakeUnlockDate = getStartDateOfEpochFormatted(Number(initialEpochTimestamp.value), epochWhereStakeUnlocks)
 
     return `Upgrades your vesting position to a stake position that grants voting rights and fee shares (if the DAO enables fees).
-    
+
     The new stake will be active starting ${stakeActiveDate}, and will unlock on ${stakeUnlockDate}, after a ${DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP}-epoch lock-up period.
-    
-    For a longer stake lock-up period, please contact us on Discord for assistance. 
+
+    For a longer stake lock-up period, please contact us on Discord for assistance.
     `
 })
 </script>

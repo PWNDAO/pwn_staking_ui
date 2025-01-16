@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/vue-query";
-import { erc20Abi, parseAbiItem, type Address } from "viem";
+import {erc20Abi, parseAbiItem, type Address, parseEventLogs} from "viem";
 import { getLogs } from "viem/actions";
 import { getClient, readContract } from "@wagmi/vue/actions";
 import { EPOCH_CLOCK_ABI, VE_PWN_TOKEN_ABI } from "~/constants/abis";
@@ -7,6 +7,8 @@ import { EPOCH_CLOCK, PWN_TOKEN, PWN_VESTING_MANAGER, STAKED_PWN_NFT, VE_PWN_TOK
 import { getChainIdTypesafe, type SupportedChain } from "~/constants/chain";
 import type { PowerInEpoch, StakeDetail, VestingDetail } from "~/types/contractResults";
 import { wagmiAdapter } from "~/wagmi";
+import { zeroAddress } from 'viem'
+
 
 export const useUserPwnBalance = (walletAddress: Ref<Address | undefined>, chainId: Ref<SupportedChain>) => {
     return useQuery({
@@ -20,6 +22,43 @@ export const useUserPwnBalance = (walletAddress: Ref<Address | undefined>, chain
                 args: [walletAddress.value!],
             })
         }
+    })
+}
+
+export function useAllBeneficiaries(address: Ref<Address | undefined>, stakeIds: bigint[], chainId: Ref<SupportedChain>) {
+    return useQuery({
+        queryKey: ['allBeneficiaries', stakeIds, address, chainId],
+        queryFn: async () => {
+            const client = getClient(wagmiAdapter.wagmiConfig)
+
+            const fetchLog = async (stakeId: bigint) => {
+                const logs = await getLogs(client!, {
+                    address: VE_PWN_TOKEN[chainId.value],
+                    event: parseAbiItem(
+                        'event StakePowerDelegated(uint256 indexed stakeId, address indexed originalBeneficiary, address indexed newBeneficiary)'
+                    ),
+                    args: { stakeId },
+                    fromBlock: 0n,
+                })
+                return logs.length > 0 ? logs[logs.length - 1] : null
+            }
+
+            const promises = stakeIds.map(fetchLog)
+            const results = await Promise.allSettled(promises)
+
+            const stakeLogs = results.filter((result) => result.status === 'fulfilled').map((result) => result.value)
+
+
+            const beneficiaryMap = new Map()
+            for (const log of stakeLogs) {
+                if (log?.args) {
+                    beneficiaryMap.set(log.args.stakeId, log.args.newBeneficiary)
+                }
+            }
+
+            return beneficiaryMap
+        },
+        enabled: stakeIds.length > 0
     })
 }
 
@@ -155,7 +194,7 @@ export const useUserCumulativeVotingPowerSummary = (walletAddress: Ref<Address |
             const strippedParsedStakerPowers = parsedStakerPowers.filter((stakerPower, index) => {
                 // Keep the number if it's not zero
                 if (stakerPower.power !== 0n) return true;
-                
+
                 // If it's zero, check if there's a non-zero number ahead
                 return parsedStakerPowers.slice(index + 1).some(_stakerPower => _stakerPower.power !== 0n);
             });
