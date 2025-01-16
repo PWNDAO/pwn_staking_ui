@@ -31,40 +31,24 @@ export function useAllBeneficiaries(address: Ref<Address | undefined>, stakeIds:
         queryFn: async () => {
             const client = getClient(wagmiAdapter.wagmiConfig)
 
-            // needs to be fetched because of the initial setup of voting power delegator
-            const logsInitialBeneficiary = await getLogs(client!, {
-                address: VE_PWN_TOKEN[chainId.value],
-                event: parseAbiItem('event StakePowerDelegated(uint256 indexed stakeId, address indexed originalBeneficiary, address indexed newBeneficiary)'),
-                args: {
-                    originalBeneficiary: zeroAddress,
-                },
-                fromBlock: 0n,
-            })
-
-            const logsOriginalBeneficiary = await getLogs(client!, {
-                address: VE_PWN_TOKEN[chainId.value],
-                event: parseAbiItem('event StakePowerDelegated(uint256 indexed stakeId, address indexed originalBeneficiary, address indexed newBeneficiary)'),
-                args: {
-                    originalBeneficiary: address.value,
-                },
-                fromBlock: 0n,
-            })
-            const logsNewBeneficiary = await getLogs(client!, {
-                address: VE_PWN_TOKEN[chainId.value],
-                event: parseAbiItem('event StakePowerDelegated(uint256 indexed stakeId, address indexed originalBeneficiary, address indexed newBeneficiary)'),
-                args: {
-                    newBeneficiary: address.value,
-                },
-                fromBlock: 0n,
-            })
-
-            const logs = logsInitialBeneficiary.concat(logsOriginalBeneficiary).concat(logsNewBeneficiary)
-            logs.sort((a, b) => Number(a.blockNumber) - Number(b.blockNumber))
-
+            const finalLogs = []
+            for (const stakeId of stakeIds) {
+                const logs = await getLogs(client!, {
+                    address: VE_PWN_TOKEN[chainId.value],
+                    event: parseAbiItem('event StakePowerDelegated(uint256 indexed stakeId, address indexed originalBeneficiary, address indexed newBeneficiary)'),
+                    args: {
+                        stakeId: stakeId,
+                    },
+                    fromBlock: 0n,
+                })
+                if (logs.length > 0) {
+                    finalLogs.push(logs[logs.length - 1])
+                }
+            }
             // Create a map of stakeId to latest beneficiary
             const beneficiaryMap = new Map<bigint, string>()
 
-            for (const log of logs) {
+            for (const log of finalLogs) {
                 if (stakeIds.includes(log.args.stakeId!)) {
                     beneficiaryMap.set(log.args.stakeId!, log.args.newBeneficiary || '')
                 }
