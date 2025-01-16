@@ -27,30 +27,32 @@ export const useUserPwnBalance = (walletAddress: Ref<Address | undefined>, chain
 
 export function useAllBeneficiaries(address: Ref<Address | undefined>, stakeIds: bigint[], chainId: Ref<SupportedChain>) {
     return useQuery({
-        queryKey: ['allBeneficiaries', stakeIds],
+        queryKey: ['allBeneficiaries', stakeIds, address, chainId],
         queryFn: async () => {
             const client = getClient(wagmiAdapter.wagmiConfig)
 
-            const finalLogs = []
-            for (const stakeId of stakeIds) {
+            const fetchLog = async (stakeId: bigint) => {
                 const logs = await getLogs(client!, {
                     address: VE_PWN_TOKEN[chainId.value],
-                    event: parseAbiItem('event StakePowerDelegated(uint256 indexed stakeId, address indexed originalBeneficiary, address indexed newBeneficiary)'),
-                    args: {
-                        stakeId: stakeId,
-                    },
+                    event: parseAbiItem(
+                        'event StakePowerDelegated(uint256 indexed stakeId, address indexed originalBeneficiary, address indexed newBeneficiary)'
+                    ),
+                    args: { stakeId },
                     fromBlock: 0n,
                 })
-                if (logs.length > 0) {
-                    finalLogs.push(logs[logs.length - 1])
-                }
+                return logs.length > 0 ? logs[logs.length - 1] : null
             }
-            // Create a map of stakeId to latest beneficiary
-            const beneficiaryMap = new Map<bigint, string>()
 
-            for (const log of finalLogs) {
-                if (stakeIds.includes(log.args.stakeId!)) {
-                    beneficiaryMap.set(log.args.stakeId!, log.args.newBeneficiary || '')
+            const promises = stakeIds.map(fetchLog)
+            const results = await Promise.allSettled(promises)
+
+            const stakeLogs = results.filter((result) => result.status === 'fulfilled').map((result) => result.value)
+
+
+            const beneficiaryMap = new Map()
+            for (const log of stakeLogs) {
+                if (log?.args) {
+                    beneficiaryMap.set(log.args.stakeId, log.args.newBeneficiary)
                 }
             }
 
