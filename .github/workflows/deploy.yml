@@ -45,6 +45,8 @@ jobs:
             VITE_PUBLIC_WC_PROJECT_ID=${{ secrets.VITE_PUBLIC_WC_PROJECT_ID }}
             VITE_PUBLIC_ETHEREUM_NODE_TOKEN=${{ secrets.VITE_PUBLIC_ETHEREUM_NODE_TOKEN }}
             VITE_PUBLIC_SEPOLIA_NODE_TOKEN=${{ secrets.VITE_PUBLIC_SEPOLIA_NODE_TOKEN }}
+            VITE_DRPC_ETHEREUM_NODE_TOKEN=${{ secrets.VITE_DRPC_ETHEREUM_NODE_TOKEN }}
+            VITE_DRPC_SEPOLIA_NODE_TOKEN=${{ secrets.VITE_DRPC_SEPOLIA_NODE_TOKEN }}
 
       - name: Build
         run: yarn generate --dotenv ${{ env.ENV_FILE }}

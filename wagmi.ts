@@ -1,4 +1,4 @@
-import { http } from '@wagmi/vue'
+import { fallback, http } from '@wagmi/vue'
 import { createAppKit } from '@reown/appkit/vue'
 import { sepolia, mainnet, type AppKitNetwork } from '@reown/appkit/networks'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
@@ -14,7 +14,12 @@ const metadata = {
 const CHAIN_SETTINGS = {
   1: {
     chain: mainnet,
-    transports: 
+    transports: fallback([
+      ...(import.meta.env.VITE_DRPC_ETHEREUM_NODE_TOKEN ? [
+        http(`https://lb.drpc.org/ogrpc?network=${mainnet.name.toLocaleLowerCase()}&dkey=${import.meta.env.VITE_DRPC_ETHEREUM_NODE_TOKEN}`, {
+          batch: true,
+        })
+      ] : []),
       http('https://eth-mainnet.alchemyapi.io/v2/', {
         batch: true,
         fetchOptions: {
@@ -23,10 +28,16 @@ const CHAIN_SETTINGS = {
           },
         },
       })
+    ])
   },
   11155111: {
     chain: sepolia,
-    transports: 
+    transports: fallback([
+      ...(import.meta.env.VITE_DRPC_SEPOLIA_NODE_TOKEN ? [
+        http(`https://lb.drpc.org/ogrpc?network=${sepolia.name.toLocaleLowerCase()}&dkey=${import.meta.env.VITE_DRPC_SEPOLIA_NODE_TOKEN}`, {
+          batch: true,
+        })
+      ] : []),
       http('https://eth-sepolia.g.alchemy.com/v2/', {
         batch: true,
         fetchOptions: {
@@ -35,6 +46,7 @@ const CHAIN_SETTINGS = {
           },
         },
       })
+    ])
   }
 } as const satisfies Record<SupportedChain, unknown>
 
