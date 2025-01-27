@@ -28,16 +28,18 @@
                             </template>
                         </BaseTooltip>
                     </div>
-                    <span v-else :class="{'table-positions__td-text--greyed': stake.isVesting}">
+                  <div v-else>
+                    <span :class="{'table-positions__td-text--greyed': stake.isVesting}">
                         {{ stake.votingPower }}
                     </span>
                     <BaseTooltip :tooltip-text="upgradeToStakeTooltipText">
-                        <template #trigger>
-                            <button :disabled="isUpgradingToStake" class="table-positions__upgrade-btn" v-if="stake.isVesting" @click="upgradeToStake(stake.unlockEpoch, DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP)">
-                                {{ isUpgradingToStake ? 'Upgrading...' : 'Upgrade to stake' }}
-                            </button>
-                        </template>
+                      <template #trigger>
+                        <button :disabled="isUpgradingToStake" class="table-positions__upgrade-btn" v-if="stake.isVesting" @click="upgradeToStake(stake.unlockEpoch, DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP)">
+                          {{ isUpgradingToStake ? 'Upgrading...' : 'Upgrade to stake' }}
+                        </button>
+                      </template>
                     </BaseTooltip>
+                  </div>
                 </td>
                 <td class="table-positions__td">
                     <template v-if="stake.votePowerStartsInNextEpoch">
@@ -73,6 +75,12 @@
                         <span class="table-positions__greyed">
                             ({{ stake.epochsRemaining }} epochs)
                         </span>
+                      <button
+                          v-if="!stake.isVesting"
+                          class="table-positions__upgrade-btn"
+                          @click="openModal(stake.id, Math.floor(stake.epochsRemaining), stake.amount)">
+                        Increase Duration
+                      </button>
                     </template>
                 </td>
             </tr>
@@ -94,6 +102,7 @@ import { PWN_VESTING_MANAGER } from '~/constants/addresses';
 import { PWN_VESTING_MANAGER_ABI } from '~/constants/abis';
 import type {Address} from "abitype";
 import {shortenAddress} from "../utils/web3";
+import {getFormattedVotingPower} from "~/utils/parsing";
 
 const { address } = useAccount()
 const chainId = useChainIdTypesafe()
@@ -143,6 +152,7 @@ interface TableRowData {
 
 const stakeIds = computed(() => stakes.data.value?.map(stake => stake.stakeId) ?? [])
 const logs = useAllBeneficiaries(stakeIds.value, chainId)
+const { openModal } = useIncreaseStakeModal()
 
 const tableRowsData = computed<TableRowData[]>(() => {
     if (stakes.data.value === undefined || secondsTillNextEpoch.value === undefined) {
@@ -177,7 +187,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
             id: stake.stakeId,
             idText: String(stake.stakeId),
             amount: formattedStakedAmount,
-            votingPower: String(Math.floor(Number(formattedStakedAmount) * multiplier)),
+            votingPower: getFormattedVotingPower(formattedStakedAmount, multiplier),
             multiplier,
             lockUpEpochs: stake.lockUpEpochs,
             duration: stake.lockUpEpochs * SECONDS_IN_EPOCH,
@@ -448,7 +458,8 @@ const upgradeToStakeTooltipText = computed(() => {
         display: inline-flex;
         align-items: center;
         height: 2rem;
-        padding: 0 1rem;
+        padding: 0 0.5rem;
+        margin: 0.5rem 0;
 
         transition: all 0.3s;
         color: var(--primary-color);
@@ -457,8 +468,6 @@ const upgradeToStakeTooltipText = computed(() => {
         border-width: 1px;
         border-style: solid;
         font-family: var(--font-family-screener);
-
-        margin-left: 1rem;
 
         &:hover {
             background: var(--primary-color-2);

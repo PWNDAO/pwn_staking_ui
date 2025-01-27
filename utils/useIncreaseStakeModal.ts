@@ -1,31 +1,69 @@
 import { computed, ref } from 'vue'
 
+const LOWER_STAKE_LOCK_UP_EPOCHS = 13
+const UPPER_STAKE_LOCK_UP_EPOCHS = 65
+const MAX_STAKE_LOCK_UP_EPOCHS = 130
 const isOpen = ref(false)
 const stakeId = ref<bigint>()
-const stakeLockUpEpochs = ref<bigint>(0n)
+const currentLockUpEpochs = ref<number>(0)
+const formattedStakeAmount = ref<string>()
 export default function useIncreaseStakeModal() {
-    const openModal = (stakeIdVal: bigint) => {
+    const openModal = (stakeIdVal: bigint, lockUpEpochs: number, stakeAmount: string) => {
         isOpen.value = true
         stakeId.value = stakeIdVal
+        currentLockUpEpochs.value = lockUpEpochs
+        formattedStakeAmount.value = stakeAmount
     }
-    const isStakeLockUpEpochs = (stakeLockUpEpochsVal: bigint) => {
-        console.log(stakeLockUpEpochs.value, stakeLockUpEpochsVal)
-        return stakeLockUpEpochs.value === stakeLockUpEpochsVal
-    }
-    const setStakeLockUpEpochs = (stakeLockUpEpochsVal: bigint) => {
-        if (isStakeLockUpEpochs(stakeLockUpEpochsVal)) {
-            stakeLockUpEpochs.value = 0n
-            return
+
+    const calculateAvailableEpochs = (): number[] => {
+
+        // Duration is maxxed out
+        if (currentLockUpEpochs.value >= MAX_STAKE_LOCK_UP_EPOCHS) {
+            return []
         }
-        stakeLockUpEpochs.value = stakeLockUpEpochsVal
+
+        // We return only the possibility to extend to exactly 10years
+        if (currentLockUpEpochs.value >= UPPER_STAKE_LOCK_UP_EPOCHS) {
+            return [MAX_STAKE_LOCK_UP_EPOCHS - currentLockUpEpochs.value]
+        }
+
+        let min = 0
+        if (currentLockUpEpochs.value < LOWER_STAKE_LOCK_UP_EPOCHS) {
+            min = LOWER_STAKE_LOCK_UP_EPOCHS - currentLockUpEpochs.value
+        }
+        const max = UPPER_STAKE_LOCK_UP_EPOCHS - currentLockUpEpochs.value
+
+        const result = [];
+        for (let i = min; i <= max; i++) {
+            result.push(i)
+        }
+
+        // the remaining possibility to max out the duration
+        result.push(MAX_STAKE_LOCK_UP_EPOCHS - currentLockUpEpochs.value)
+
+        return result
+    }
+
+    const getSliderMarks = () => {
+        const availableEpochs = calculateAvailableEpochs()
+        console.log(availableEpochs.length)
+        const lastValue = availableEpochs.length - 1
+        const marks: string[] = []
+        for(let i = 0; i < availableEpochs.length; i++) {
+            marks[i] = ``
+        }
+        marks[lastValue] = `test`
+        console.log(marks)
+        return marks
     }
 
     return {
         isOpen,
         openModal,
         stakeId,
-        stakeLockUpEpochs,
-        isStakeLockUpEpochs,
-        setStakeLockUpEpochs,
+        currentLockUpEpochs,
+        formattedStakeAmount,
+        calculateAvailableEpochs,
+        getSliderMarks,
     }
 }

@@ -6,18 +6,81 @@
     <template #body>
       <div class="increase-stake-modal__body">
         <span class="increase-stake-modal__label">
-          Increase Duration
+          Increase Duration (in epochs)
         </span>
-        <div class="increase-stake-modal__duration-buttons">
-          <div class="increase-stake-modal__duration-button-container"
-              v-for="button in durationButtons"
-          @click="setStakeLockUpEpochs(button.epochs)">
-            <div  :class="['increase-stake-modal__duration-button', { 'increase-stake-modal__duration-button--selected': isStakeLockUpEpochs(button.epochs)}]">
-              {{button.label}}
+      </div>
+      <VueSlider
+          style="width: 90%; margin: 0 auto;"
+          v-model="additionalLockUpEpochs"
+          :data="calculatedEpochs"
+          :tooltip="'always'"
+          :process-style="{
+        backgroundColor: 'var(--primary-color)',
+        }" @click.stop>
+        <template #tooltip="{ value }">
+          <div
+              :class="['increase-stake-modal__tooltip-text', {
+          }]">
+            {{ value + ' Epochs' }}
+          </div>
+        </template>
+        <template #dot>
+          <div class="increase-stake-modal__dot"/>
+        </template>
+      </VueSlider>
+      <span class="increase-stake-modal__disclaimer"> Disclaimer: Stake can have duration only between 1 and 5 years, or 10 years.</span>
+      <div class="increase-stake-modal__comparison">
+        <div class="increase-stake-modal__section">
+          <div class="increase-stake-modal__section-title">Current Stake</div>
+          <div class="increase-stake-modal__stats">
+            <div class="increase-stake-modal__stat">
+              <div class="increase-stake-modal__label-stats">Lock-up Period</div>
+              <div class="increase-stake-modal__value">
+                {{ formatSeconds(currentLockUpEpochs * SECONDS_IN_EPOCH + secondsTillNextEpoch!) }}
+              </div>
             </div>
-            <span class="increase-stake-modal__multiplier">
-              (x{{getMultiplierForLockUpEpochs(Number(button.epochs))}})
-            </span>
+
+            <div class="increase-stake-modal__stat">
+              <div class="increase-stake-modal__label-stats">Multiplier</div>
+              <div class="increase-stake-modal__value">
+                {{ getMultiplierForLockUpEpochs(currentLockUpEpochs) }}x
+              </div>
+            </div>
+
+            <div class="increase-stake-modal__stat">
+              <div class="increase-stake-modal__label-stats">Voting Power</div>
+              <div class="increase-stake-modal__value">
+                {{ getFormattedVotingPower(formattedStakeAmount!, getMultiplierForLockUpEpochs(currentLockUpEpochs)) }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="increase-stake-modal__divider"></div>
+
+        <div class="increase-stake-modal__section">
+          <div class="increase-stake-modal__section-title">New Stake</div>
+          <div class="increase-stake-modal__stats">
+            <div class="increase-stake-modal__stat">
+              <div class="increase-stake-modal__label-stats">Lock-up Period</div>
+              <div class="increase-stake-modal__value">
+                {{ formatSeconds(finalLockUpEpochs * SECONDS_IN_EPOCH + secondsTillNextEpoch!) }}
+              </div>
+            </div>
+
+            <div class="increase-stake-modal__stat">
+              <div class="increase-stake-modal__label-stats">Multiplier</div>
+              <div class="increase-stake-modal__value">
+                {{ getMultiplierForLockUpEpochs(finalLockUpEpochs) }}x
+              </div>
+            </div>
+
+            <div class="increase-stake-modal__stat">
+              <div class="increase-stake-modal__label-stats">Voting Power</div>
+              <div class="increase-stake-modal__value">
+                {{ getFormattedVotingPower(formattedStakeAmount!, getMultiplierForLockUpEpochs(finalLockUpEpochs)) }}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -31,7 +94,7 @@
                 class="increase-stake-modal__submit-button"
                 :disabled="isButtonDisabled"
                 @click="increaseStakeAction">
-              Confirm Increase
+              {{isPending ? 'Increasing...' : 'Confirm Increase'}}
             </button>
           </template>
         </BaseTooltip>
@@ -40,7 +103,7 @@
             class="increase-stake-modal__submit-button"
             :disabled="isButtonDisabled"
             @click="increaseStakeAction">
-          Confirm Increase
+          {{isPending ? 'Increasing...' : 'Confirm Increase'}}
         </button>
       </div>
     </template>
@@ -52,57 +115,84 @@
 import {useAccount, useWriteContract} from "@wagmi/vue";
 import {VE_PWN_TOKEN_ABI} from "~/constants/abis";
 import {VE_PWN_TOKEN} from "~/constants/addresses";
-import {getChainIdTypesafe} from "~/constants/chain";
+import {getChainIdTypesafe, useChainIdTypesafe} from "~/constants/chain";
 import useIncreaseStakeModal from "~/utils/useIncreaseStakeModal";
-import {EPOCHS_IN_YEAR} from "~/constants/contracts";
-import {getMultiplierForLockUpEpochs} from "~/utils/parsing";
+import VueSlider from 'vue-3-slider-component'
+import {getFormattedVotingPower, getMultiplierForLockUpEpochs} from "~/utils/parsing";
+import {formatSeconds} from "~/utils/date";
+import {SECONDS_IN_EPOCH} from "~/constants/contracts";
 
 const { writeContractAsync: _writeContractIncreaseStake, isPending } = useWriteContract()
-const {isOpen, stakeId, isStakeLockUpEpochs, setStakeLockUpEpochs, stakeLockUpEpochs} = useIncreaseStakeModal()
-const heading = computed( () => `Increase Stake #${Number(stakeId.value)}`)
+const {isOpen, stakeId, currentLockUpEpochs, formattedStakeAmount, calculateAvailableEpochs} = useIncreaseStakeModal()
+const heading = computed( () => `Increase Duration of Stake #${Number(stakeId.value)}`)
 const { address } = useAccount()
+const additionalLockUpEpochs = ref(0)
+const chainId = useChainIdTypesafe()
+const initialEpochTimestampQuery = useInitialEpochTimestamp(chainId)
+const initialEpochTimestamp = computed(() => initialEpochTimestampQuery.data.value)
 
-const isButtonDisabled = computed(() => !stakeId.value || !address.value || !stakeLockUpEpochs.value || isPending.value)
+
+watch(isOpen, (newVal) => {
+  if (newVal) {
+    additionalLockUpEpochs.value = 0
+  }
+})
+
+const secondsTillNextEpoch = computed(() => {
+  if (initialEpochTimestamp.value === undefined) {
+    return undefined
+  }
+
+  return getSecondsTillNextEpoch(Number(initialEpochTimestamp.value))
+})
+
+
+const finalLockUpEpochs = computed(() => currentLockUpEpochs.value + additionalLockUpEpochs.value)
+
+const calculatedEpochs = computed(() => {
+  return calculateAvailableEpochs()
+})
+
+const isButtonDisabled = computed(() => !stakeId.value || !address.value || isPending.value || !additionalLockUpEpochs.value)
 const tooltipText = computed(() => isButtonDisabled.value ? 'Please select duration.' : '')
-const durationButtons = [
-  {
-    label: '2 Years',
-    epochs: BigInt(EPOCHS_IN_YEAR * 2)
-  },
-  {
-    label: '3 Years',
-    epochs: BigInt(EPOCHS_IN_YEAR * 3)
-  },
-  {
-    label: '4 Years',
-    epochs: BigInt(EPOCHS_IN_YEAR * 4)
-  },
-  {
-    label: '5 Years',
-    epochs: BigInt(EPOCHS_IN_YEAR * 5)
-  },
-  {
-    label: '10 Years',
-    epochs: BigInt(EPOCHS_IN_YEAR * 10)
-  },
-]
 
-// TODO: Who can increase the stake? Only the owner of the stake? Isn't beneficiary the person with the voting power therefore not necessarily the owner?
 // TODO LATER: also allow for increasing amount, now only works to increase time
 const increaseStakeAction = async () => {
-  if (!stakeId.value || !address.value || !stakeLockUpEpochs.value) return console.error('Missing required values')
+  if (!stakeId.value || !address.value || !additionalLockUpEpochs.value) return console.error('Missing required values')
   return await _writeContractIncreaseStake({
     abi: VE_PWN_TOKEN_ABI,
     address: VE_PWN_TOKEN[getChainIdTypesafe()],
     functionName: 'increaseStake',
     chainId: getChainIdTypesafe(),
-    args: [stakeId.value, address.value, 0n, stakeLockUpEpochs.value]
+    args: [stakeId.value, address.value, 0n, BigInt(additionalLockUpEpochs.value)]
   })
+  //todo: how to check for success?
 }
 </script>
 
 <style scoped>
 .increase-stake-modal{
+  &__disclaimer {
+    font-family: var(--font-family-supreme);
+    font-size: 0.75rem;
+    color: var(--text-color);
+  }
+  &__tooltip-text {
+    font-family: var(--font-family-screener);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-color);
+    white-space: nowrap;
+  }
+  &__dot {
+    width: 2rem;
+    height: 1.5rem;
+    position: absolute;
+    top: -0.5rem;
+
+    border: 1px solid var(--grey);
+    background: var(--black-input);
+  }
   &__label{
     color: #AAA9B2;
     /* Screener/H10 */
@@ -112,6 +202,50 @@ const increaseStakeAction = async () => {
     font-weight: 400;
     line-height: 1rem; /* 114.286% */
   }
+  &__comparison {
+    margin-top: 1.5rem;
+    display: flex;
+
+  }
+
+  &__section {
+    padding: 1rem;
+  }
+
+  &__section-title {
+    margin-bottom: 1rem;
+    font-family: var(--font-family-screener);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-color);
+    text-align: center;
+  }
+
+  &__stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  &__stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 14rem;
+  }
+
+  &__label-stats {
+    font-family: var(--font-family-screener);
+    font-size: 0.75rem;
+    color: #AAA9B2;
+  }
+
+  &__value {
+    font-family: var(--font-family-supreme);
+    font-size: 0.75rem;
+    color: var(--text-color);
+  }
+
   &__duration-buttons{
     display: flex;
     gap: 1rem;

@@ -227,7 +227,7 @@ watch(isOpenLocal, () => {
 
     &--variant {
       &-error {
-        color: var(--negative-1);
+        color: var(--negative);
       }
     }
   }
@@ -257,7 +257,7 @@ watch(isOpenLocal, () => {
 
     &--variant {
       &-error {
-        color: var(--negative-1);
+        color: var(--negative);
       }
     }
   }

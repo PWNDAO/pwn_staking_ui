@@ -1,9 +1,5 @@
 <template>
     <div class="homepage">
-      <button
-          @click="openModal(131n)">
-        Open Modal
-      </button>
         <div class="homepage__epoch-input" v-if="showTestingTopBar">
             <template v-if="showEpochSwitcher">
                 <div>Real epoch in contract: {{ currentEpoch }}</div>
