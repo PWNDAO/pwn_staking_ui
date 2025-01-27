@@ -151,8 +151,8 @@ interface TableRowData {
 }
 
 const stakeIds = computed(() => stakes.data.value?.map(stake => stake.stakeId) ?? [])
-const logs = useAllBeneficiaries(stakeIds.value, chainId)
 const { openModal } = useIncreaseStakeModal()
+const logs = useAllBeneficiaries(address, stakeIds.value, chainId)
 
 const tableRowsData = computed<TableRowData[]>(() => {
     if (stakes.data.value === undefined || secondsTillNextEpoch.value === undefined) {
