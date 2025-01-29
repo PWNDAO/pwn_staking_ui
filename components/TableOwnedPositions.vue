@@ -4,7 +4,9 @@
             <tr>
                 <th class="table-positions__th" scope="col" :style="{'width': column.width}" v-for="column in COLUMNS_DEFINITION">
                     {{ column.text }}
-                    <SortingIcon @click="event => handleSortingIconClick(column.id)" :direction="sortingProp === column.id ? sortingDirection : 'none'" />
+                    <SortingIcon v-if="column.id !== 'actions'"
+                                 @click="event => handleSortingIconClick(column.id)"
+                                 :direction="sortingProp === column.id ? sortingDirection : 'none'" />
                 </th>
             </tr>
         </thead>
@@ -338,6 +340,9 @@ const sortedTableRowsData = computed(() => {
                 } else {
                     return a.unlocksIn > b.unlocksIn ? 1 : -1
                 }
+            }
+            default: {
+                return 0
             }
         }
     })
