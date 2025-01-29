@@ -42,6 +42,27 @@ export const formatSeconds = (seconds: number): string => {
     if (counter < 3 && minutes > 0) {
         result += `${minutes}m`
     }
-    
+
     return result
+}
+
+export const displayShortDate = (date: Date | number, hasShortMonthName?: boolean): string => {
+    const day = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date)
+    const month = new Intl.DateTimeFormat('en', { month: hasShortMonthName ? 'short' : 'long' }).format(date)
+    const year = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date)
+
+    const nthNumber = (number: number) => {
+        if (number > 3 && number < 21) return 'th'
+        switch (number % 10) {
+            case 1:
+                return 'st'
+            case 2:
+                return 'nd'
+            case 3:
+                return 'rd'
+            default:
+                return 'th'
+        }
+    }
+    return `${month} ${parseInt(day)}${nthNumber(Number(day))} ${year}`
 }

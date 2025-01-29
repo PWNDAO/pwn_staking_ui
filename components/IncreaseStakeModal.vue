@@ -28,15 +28,21 @@
           <div class="increase-stake-modal__dot"/>
         </template>
       </VueSlider>
-      <span class="increase-stake-modal__disclaimer"> Disclaimer: Stake can have duration only between 1 and 5 years, or 10 years.</span>
+      <span class="increase-stake-modal__disclaimer"> Note: Stake can have duration only between 1 and 5 years, or 10 years.</span>
       <div class="increase-stake-modal__comparison">
         <div class="increase-stake-modal__section">
           <div class="increase-stake-modal__section-title">Current Stake</div>
           <div class="increase-stake-modal__stats">
             <div class="increase-stake-modal__stat">
-              <div class="increase-stake-modal__label-stats">Lock-up Period</div>
+              <div class="increase-stake-modal__label-stats">Unlocks in</div>
               <div class="increase-stake-modal__value">
                 {{ formatSeconds(currentLockUpEpochs * SECONDS_IN_EPOCH + secondsTillNextEpoch!) }}
+              </div>
+            </div>
+            <div class="increase-stake-modal__stat">
+              <div class="increase-stake-modal__label-stats">Unlock date</div>
+              <div class="increase-stake-modal__value">
+                {{ displayShortDate(new Date(Date.now() + (currentLockUpEpochs * SECONDS_IN_EPOCH + secondsTillNextEpoch!) * 1000)) }}
               </div>
             </div>
 
@@ -62,9 +68,16 @@
           <div class="increase-stake-modal__section-title">New Stake</div>
           <div class="increase-stake-modal__stats">
             <div class="increase-stake-modal__stat">
-              <div class="increase-stake-modal__label-stats">Lock-up Period</div>
+              <div class="increase-stake-modal__label-stats">Unlocks in</div>
               <div class="increase-stake-modal__value">
                 {{ formatSeconds(finalLockUpEpochs * SECONDS_IN_EPOCH + secondsTillNextEpoch!) }}
+              </div>
+            </div>
+
+            <div class="increase-stake-modal__stat">
+              <div class="increase-stake-modal__label-stats">Unlock date</div>
+              <div class="increase-stake-modal__value">
+                {{ displayShortDate(new Date(Date.now() + (finalLockUpEpochs * SECONDS_IN_EPOCH + secondsTillNextEpoch!) * 1000)) }}
               </div>
             </div>
 
@@ -87,24 +100,17 @@
       <div class="increase-stake-modal__submit">
         <BaseTooltip
             style="width: 100%"
-            v-if="isButtonDisabled"
+            :has-tooltip="isButtonDisabled && !isPending"
             :tooltip-text="tooltipText">
           <template #trigger>
             <button
                 class="increase-stake-modal__submit-button"
                 :disabled="isButtonDisabled"
                 @click="increaseStakeAction">
-              {{isPending ? 'Increasing...' : 'Confirm Increase'}}
+              {{ isPending ? 'Increasing...' : 'Confirm Increase'}}
             </button>
           </template>
         </BaseTooltip>
-        <button
-            v-else
-            class="increase-stake-modal__submit-button"
-            :disabled="isButtonDisabled"
-            @click="increaseStakeAction">
-          {{isPending ? 'Increasing...' : 'Confirm Increase'}}
-        </button>
       </div>
     </template>
   </BaseModal>
@@ -119,7 +125,7 @@ import {getChainIdTypesafe, useChainIdTypesafe} from "~/constants/chain";
 import useIncreaseStakeModal from "~/utils/useIncreaseStakeModal";
 import VueSlider from 'vue-3-slider-component'
 import {getFormattedVotingPower, getMultiplierForLockUpEpochs} from "~/utils/parsing";
-import {formatSeconds} from "~/utils/date";
+import {displayShortDate, formatSeconds} from "~/utils/date";
 import {SECONDS_IN_EPOCH} from "~/constants/contracts";
 
 const { writeContractAsync: _writeContractIncreaseStake, isPending } = useWriteContract()
@@ -132,11 +138,7 @@ const initialEpochTimestampQuery = useInitialEpochTimestamp(chainId)
 const initialEpochTimestamp = computed(() => initialEpochTimestampQuery.data.value)
 
 
-watch(isOpen, (newVal) => {
-  if (newVal) {
-    additionalLockUpEpochs.value = 0
-  }
-})
+
 
 const secondsTillNextEpoch = computed(() => {
   if (initialEpochTimestamp.value === undefined) {
@@ -151,6 +153,12 @@ const finalLockUpEpochs = computed(() => currentLockUpEpochs.value + additionalL
 
 const calculatedEpochs = computed(() => {
   return calculateAvailableEpochs()
+})
+
+watch(isOpen, (newVal) => {
+  if (newVal) {
+    additionalLockUpEpochs.value = calculatedEpochs.value[0] || 0
+  }
 })
 
 const isButtonDisabled = computed(() => !stakeId.value || !address.value || isPending.value || !additionalLockUpEpochs.value)

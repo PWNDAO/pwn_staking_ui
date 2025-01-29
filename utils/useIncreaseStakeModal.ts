@@ -44,19 +44,6 @@ export default function useIncreaseStakeModal() {
         return result
     }
 
-    const getSliderMarks = () => {
-        const availableEpochs = calculateAvailableEpochs()
-        console.log(availableEpochs.length)
-        const lastValue = availableEpochs.length - 1
-        const marks: string[] = []
-        for(let i = 0; i < availableEpochs.length; i++) {
-            marks[i] = ``
-        }
-        marks[lastValue] = `test`
-        console.log(marks)
-        return marks
-    }
-
     return {
         isOpen,
         openModal,
@@ -64,6 +51,5 @@ export default function useIncreaseStakeModal() {
         currentLockUpEpochs,
         formattedStakeAmount,
         calculateAvailableEpochs,
-        getSliderMarks,
     }
 }

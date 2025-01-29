@@ -10,3 +10,34 @@ body {
 
     font-family: var(--font-family-supreme);
 }
+
+/** ===========
+ *  LINKS
+ *  =========== */
+.link {
+    text-decoration: underline;
+    color: var(--text-color);
+    transition: all var(--primary-transition-time);
+    font-family: var(--font-family-supreme);
+    cursor: pointer;
+
+    &:hover {
+        filter: brightness(60%);
+    }
+
+    &--no-darkening:hover {
+        filter: none;
+    }
+
+    &--no-underline {
+        text-decoration: none;
+    }
+
+    &--primary {
+        color: var(--primary-color);
+    }
+
+    &--sm {
+        font-size: 0.85rem;
+    }
+}

@@ -16,7 +16,7 @@
                 </td>
                 <td class="table-positions__td">{{ stake.amount }}</td>
                 <td class="table-positions__td">
-                    <div v-if="stake.votePowerStartsInNextEpoch" class="table-positions__not-yet-voting-power-wrapper">
+                  <div v-if="stake.votePowerStartsInNextEpoch" class="table-positions__not-yet-voting-power-wrapper">
                         <span class="table-positions__td-text--greyed">
                             {{ stake.votingPower }}
                         </span>
@@ -32,13 +32,6 @@
                     <span :class="{'table-positions__td-text--greyed': stake.isVesting}">
                         {{ stake.votingPower }}
                     </span>
-                    <BaseTooltip :tooltip-text="upgradeToStakeTooltipText">
-                      <template #trigger>
-                        <button :disabled="isUpgradingToStake" class="table-positions__upgrade-btn" v-if="stake.isVesting" @click="upgradeToStake(stake.unlockEpoch, DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP)">
-                          {{ isUpgradingToStake ? 'Upgrading...' : 'Upgrade to stake' }}
-                        </button>
-                      </template>
-                    </BaseTooltip>
                   </div>
                 </td>
                 <td class="table-positions__td">
@@ -75,13 +68,22 @@
                         <span class="table-positions__greyed">
                             ({{ stake.epochsRemaining }} epochs)
                         </span>
-                      <button
-                          v-if="!stake.isVesting"
-                          class="table-positions__upgrade-btn"
-                          @click="openModal(stake.id, Math.floor(stake.epochsRemaining), stake.amount)">
-                        Increase Duration
+                    </template>
+                </td>
+                <td class="table-positions__td">
+                  <BaseTooltip  v-if="stake.isVesting" :tooltip-text="upgradeToStakeTooltipText">
+                    <template #trigger>
+                      <button :disabled="isUpgradingToStake" class="table-positions__upgrade-btn" @click="upgradeToStake(stake.unlockEpoch, DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP)">
+                        {{ isUpgradingToStake ? 'Upgrading...' : 'Upgrade to stake' }}
                       </button>
                     </template>
+                  </BaseTooltip>
+                  <span
+                      v-else
+                      class="link link--no-underline link--primary"
+                      @click="openModal(stake.id, Math.floor(stake.epochsRemaining), stake.amount)">
+                    Increase Duration
+                  </span>
                 </td>
             </tr>
         </tbody>
@@ -249,12 +251,12 @@ const COLUMNS_DEFINITION = [
     {
         id: 'amount',
         text: 'Amount',
-        width: '20%',
+        width: '15%',
     },
     {
         id: 'votingPower',
         text: 'Voting Power',
-        width: '20%',
+        width: '15%',
     },
     {
         id: 'multiplier',
@@ -271,6 +273,11 @@ const COLUMNS_DEFINITION = [
         text: 'Unlocks in',
         width: '20%',
     },
+  {
+    id: 'actions',
+    text: 'Actions',
+    width: '10%',
+  }
 ] as const
 
 type SortingProp = typeof COLUMNS_DEFINITION[number]['id']
