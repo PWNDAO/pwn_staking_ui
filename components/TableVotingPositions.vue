@@ -15,11 +15,11 @@
                 <td class="table-positions__td">
                     {{ stake.idText }}
                 </td>
-                <td class="table-positions__td">{{ stake.amount }}</td>
+                <td class="table-positions__td">{{ formatDecimalPoint(stake.amount) }}</td>
                 <td class="table-positions__td">
                     <div v-if="stake.votePowerStartsInNextEpoch" class="table-positions__not-yet-voting-power-wrapper">
                         <span class="table-positions__td-text--greyed">
-                            {{ stake.votingPower }}
+                            {{ formatDecimalPoint(stake.votingPower) }}
                         </span>
                         <BaseTooltip
                             :tooltip-text="`You will gain your voting power in next epoch, which will be in ${timeTillNextEpoch}.`"
@@ -30,7 +30,7 @@
                         </BaseTooltip>
                     </div>
                     <span v-else :class="{'table-positions__td-text--greyed': stake.isVesting}">
-                        {{ stake.votingPower }}
+                        {{ formatDecimalPoint(stake.votingPower) }}
                     </span>
                 </td>
                 <td class="table-positions__td">
@@ -80,7 +80,7 @@ import { SECONDS_IN_EPOCH } from '~/constants/contracts';
 import { formatSeconds } from '@/utils/date';
 import { TooltipBorderColor } from './BaseTooltip.vue';
 import { useChainIdTypesafe } from '~/constants/chain';
-import { useCurrentEpoch, useUserStakesWithVotingPower} from '~/utils/hooks';
+import {useCurrentEpoch, useManuallySetEpoch, useUserStakesWithVotingPower} from '~/utils/hooks';
 import type {Address} from "abitype";
 import {shortenAddress} from "../utils/web3";
 import {formatDecimalPoint} from "~/utils/utils";
@@ -91,8 +91,7 @@ const chainId = useChainIdTypesafe()
 
 const stakes = useUserStakes(address, chainId)
 
-const currentEpochQuery = useCurrentEpoch(chainId)
-const currentEpoch = computed(() => currentEpochQuery.data?.value)
+const {epoch: currentEpoch} = useManuallySetEpoch(chainId)
 const nextEpoch = computed(() => currentEpoch?.value ? currentEpoch?.value + 1 : undefined)
 
 const userStakesWithVotingPowerQuery = useUserStakesWithVotingPower(address, currentEpoch, chainId)
@@ -103,7 +102,7 @@ const userStakesWithVotingPowerFiltered = computed(() => userStakesWithVotingPow
   return address.value !== stake.owner
 }))
 const userStakesWithVotingPowerNextEpochFiltered = computed(() => userStakesWithVotingPowerNextEpoch.value?.filter( stake => {
-  return address.value !== stake.owner
+  return address.value !== stake.owner && !userStakesWithVotingPowerFiltered.value?.find(s => s.stakeId === stake.stakeId)
 }))
 
 const initialEpochTimestampQuery = useInitialEpochTimestamp(chainId)
@@ -173,7 +172,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
         return {
             id: stake.stakeId,
             idText: String(stake.stakeId),
-            amount: formatDecimalPoint(formattedStakedAmount),
+            amount: formattedStakedAmount,
             votingPower: getFormattedVotingPower(formattedStakedAmount, multiplier),
             multiplier,
             lockUpEpochs: stake.lockUpEpochs,
@@ -215,7 +214,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
     return {
       id: stake.stakeId,
       idText: String(stake.stakeId),
-      amount: formatDecimalPoint(formattedStakedAmount),
+      amount: formattedStakedAmount,
       votingPower: getFormattedVotingPower(formattedStakedAmount, multiplier),
       multiplier,
       lockUpEpochs: stake.lockUpEpochs,
@@ -228,7 +227,8 @@ const tableRowsData = computed<TableRowData[]>(() => {
       isNextEpoch: true,
     }
   }) || []
-
+    console.log('user stakes', userStakes)
+  console.log('user stakes next', userNextEpochStakes)
   return [...userStakes, ...userNextEpochStakes]
 })
 

@@ -27,7 +27,7 @@ export const calculateUserVotingMultiplier = (epochToCalculateIn: number, stakes
 }
 
 export const getFormattedVotingPower = (formattedAmount: string, multiplier: number): string => {
-    return formatDecimalPoint(String(Math.floor(Number(formattedAmount) * multiplier)))
+    return String(Math.floor(Number(formattedAmount) * multiplier))
 }
 export const getMultiplierForLockUpEpochs = (lockUpEpochs: number) => {
     const EPOCHS_IN_YEAR = 13

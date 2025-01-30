@@ -16,11 +16,11 @@
                 <td class="table-positions__td">
                     {{ stake.idText }}
                 </td>
-                <td class="table-positions__td">{{ stake.amount }}</td>
+                <td class="table-positions__td">{{ formatDecimalPoint(stake.amount) }}</td>
                 <td class="table-positions__td">
                   <div v-if="stake.votePowerStartsInNextEpoch" class="table-positions__not-yet-voting-power-wrapper">
                         <span class="table-positions__td-text--greyed">
-                            {{ stake.votingPower }}
+                            {{ formatDecimalPoint(stake.votingPower) }}
                         </span>
                         <BaseTooltip
                             :tooltip-text="`You will gain your voting power in next epoch, which will be in ${timeTillNextEpoch}.`"
@@ -32,7 +32,7 @@
                     </div>
                   <div v-else>
                     <span :class="{'table-positions__td-text--greyed': stake.isVesting}">
-                        {{ stake.votingPower }}
+                        {{ formatDecimalPoint(stake.votingPower) }}
                     </span>
                   </div>
                 </td>
@@ -117,8 +117,7 @@ const stakes = useUserStakes(address, chainId)
 const vestedTokensQuery = useUserVestedTokens(address, chainId)
 const vestedTokens = computed(() => vestedTokensQuery.data?.value)
 
-const currentEpochQuery = useCurrentEpoch(chainId)
-const currentEpoch = computed(() => currentEpochQuery.data?.value)
+const {epoch: currentEpoch} = useManuallySetEpoch(chainId)
 
 const initialEpochTimestampQuery = useInitialEpochTimestamp(chainId)
 const initialEpochTimestamp = computed(() => initialEpochTimestampQuery.data.value)
@@ -191,7 +190,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
         return {
             id: stake.stakeId,
             idText: String(stake.stakeId),
-            amount: formatDecimalPoint(formattedStakedAmount),
+            amount: formattedStakedAmount,
             votingPower: getFormattedVotingPower(formattedStakedAmount, multiplier),
             multiplier,
             lockUpEpochs: stake.lockUpEpochs,
@@ -227,7 +226,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
             userStakes.push({
                 id: BigInt(index + 1), // arbitrary number as vestings does not have stake id
                 idText: `Vesting ${index + 1}`,
-                amount: formatDecimalPoint(formatUnits(vestedToken.amount, 18)),
+                amount: formatUnits(vestedToken.amount, 18),
                 votingPower: '0',
                 multiplier: 0,
                 lockUpEpochs,
