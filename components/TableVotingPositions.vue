@@ -230,7 +230,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
     }
   }) || []
 
-  return [...userStakes]
+  return [...userStakes, ...userNextEpochStakes]
 })
 
 const COLUMNS_DEFINITION = [

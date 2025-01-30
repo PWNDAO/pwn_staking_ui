@@ -127,8 +127,9 @@ import VueSlider from 'vue-3-slider-component'
 import {getFormattedVotingPower, getMultiplierForLockUpEpochs} from "~/utils/parsing";
 import {displayShortDate, formatSeconds} from "~/utils/date";
 import {SECONDS_IN_EPOCH} from "~/constants/contracts";
+import {sendTransaction} from "~/utils/useTransactions";
+import {useQueryClient} from "@tanstack/vue-query";
 
-const { writeContractAsync: _writeContractIncreaseStake, isPending } = useWriteContract()
 const {isOpen, stakeId, currentLockUpEpochs, formattedStakeAmount, calculateAvailableEpochs} = useIncreaseStakeModal()
 const heading = computed( () => `Increase Duration of Stake #${Number(stakeId.value)}`)
 const { address } = useAccount()
@@ -136,7 +137,8 @@ const additionalLockUpEpochs = ref(0)
 const chainId = useChainIdTypesafe()
 const initialEpochTimestampQuery = useInitialEpochTimestamp(chainId)
 const initialEpochTimestamp = computed(() => initialEpochTimestampQuery.data.value)
-
+const isPending = ref(false)
+const queryClient = useQueryClient()
 
 
 
@@ -163,18 +165,26 @@ watch(isOpen, (newVal) => {
 
 const isButtonDisabled = computed(() => !stakeId.value || !address.value || isPending.value || !additionalLockUpEpochs.value)
 const tooltipText = computed(() => isButtonDisabled.value ? 'Please select duration.' : '')
+const invalidateUserStakesQuery = () => {
+  queryClient.invalidateQueries({queryKey: ['userStakesWithVotingPower']})
+  queryClient.invalidateQueries({queryKey: ['stakedPwnBalance']})
+}
 
 // TODO LATER: also allow for increasing amount, now only works to increase time
 const increaseStakeAction = async () => {
   if (!stakeId.value || !address.value || !additionalLockUpEpochs.value) return console.error('Missing required values')
-  return await _writeContractIncreaseStake({
+  isPending.value = true
+  await sendTransaction({
     abi: VE_PWN_TOKEN_ABI,
     address: VE_PWN_TOKEN[getChainIdTypesafe()],
     functionName: 'increaseStake',
     chainId: getChainIdTypesafe(),
     args: [stakeId.value, address.value, 0n, BigInt(additionalLockUpEpochs.value)]
   })
-  //todo: how to check for success?
+  invalidateUserStakesQuery()
+  isPending.value = false
+  isOpen.value = false
+  //todo: refetch data
 }
 </script>
 

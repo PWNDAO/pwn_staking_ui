@@ -4,7 +4,7 @@ import { defineNuxtConfig } from 'nuxt/config'
 export default defineNuxtConfig({
   ssr: true,
   devtools: { enabled: true },
-  modules: ['@wagmi/vue/nuxt', 'nuxt-svgo'],
+  modules: ['@wagmi/vue/nuxt', 'nuxt-svgo', '@pinia/nuxt'],
   compatibilityDate: '2024-10-02',
   css: [
     '~/assets/css/_variables.css', 
