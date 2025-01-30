@@ -74,18 +74,17 @@
 
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core';
-import { useAccount, useWriteContract } from '@wagmi/vue';
+import { useAccount } from '@wagmi/vue';
 import { formatUnits, parseUnits } from 'viem';
-import { SECONDS_IN_EPOCH, MIN_STAKE_DURATION_IN_EPOCH } from '~/constants/contracts';
+import { SECONDS_IN_EPOCH } from '~/constants/contracts';
 import { formatSeconds } from '@/utils/date';
 import { TooltipBorderColor } from './BaseTooltip.vue';
 import { useChainIdTypesafe } from '~/constants/chain';
 import { useCurrentEpoch, useUserStakesWithVotingPower} from '~/utils/hooks';
-import { wagmiAdapter } from '~/wagmi';
-import { PWN_VESTING_MANAGER } from '~/constants/addresses';
-import { PWN_VESTING_MANAGER_ABI } from '~/constants/abis';
 import type {Address} from "abitype";
 import {shortenAddress} from "../utils/web3";
+import {formatDecimalPoint} from "~/utils/utils";
+import {getFormattedVotingPower} from "~/utils/parsing";
 
 const { address } = useAccount()
 const chainId = useChainIdTypesafe()
@@ -174,8 +173,8 @@ const tableRowsData = computed<TableRowData[]>(() => {
         return {
             id: stake.stakeId,
             idText: String(stake.stakeId),
-            amount: formattedStakedAmount,
-            votingPower: String(Math.floor(Number(formattedStakedAmount) * multiplier)),
+            amount: formatDecimalPoint(formattedStakedAmount),
+            votingPower: getFormattedVotingPower(formattedStakedAmount, multiplier),
             multiplier,
             lockUpEpochs: stake.lockUpEpochs,
             unlocksIn,
@@ -216,8 +215,8 @@ const tableRowsData = computed<TableRowData[]>(() => {
     return {
       id: stake.stakeId,
       idText: String(stake.stakeId),
-      amount: formattedStakedAmount,
-      votingPower: String(Math.floor(Number(formattedStakedAmount) * multiplier)),
+      amount: formatDecimalPoint(formattedStakedAmount),
+      votingPower: getFormattedVotingPower(formattedStakedAmount, multiplier),
       multiplier,
       lockUpEpochs: stake.lockUpEpochs,
       unlocksIn,

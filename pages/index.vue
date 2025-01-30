@@ -103,6 +103,7 @@ import { getChainIdToToggleTo, toggleActiveChain, useChainIdTypesafe } from '~/c
 import { SECONDS_IN_EPOCH } from '~/constants/contracts';
 import { useUserStakesWithVotingPower } from '~/utils/hooks';
 import { calculateUserVotingMultiplier } from '~/utils/parsing';
+import {formatDecimalPoint} from "~/utils/utils";
 
 const { address } = useAccount()
 const chainId = useChainIdTypesafe()
@@ -124,7 +125,7 @@ const pwnTokenBalanceFormatted = computed(() => {
         return 'None'
     }
 
-    return formatUnits(pwnTokenBalance.value, 18)
+    return formatDecimalPoint(formatUnits(pwnTokenBalance.value, 18))
 })
 const isFetchingPwnTokenBalance = computed(() => pwnTokenBalanceQuery.isLoading.value)
 
@@ -148,7 +149,7 @@ const stakedTokensFormatted = computed(() => {
         return 'None'
     }
 
-    return formatUnits(stakedTokens.value, 18)
+    return formatDecimalPoint(formatUnits(stakedTokens.value, 18))
 })
 const currentEpochQuery = useCurrentEpoch(chainId)
 const currentEpoch = computed(() => {
@@ -184,7 +185,7 @@ const votingPowerFormatted = computed(() => {
         return 'No voting power'
     }
 
-    return formatUnits(votingPower.value, 18)
+    return formatDecimalPoint(formatUnits(votingPower.value, 18))
 })
 const isFetchingVotingPower = computed(() => votingPowerQuery.isLoading.value)
 
@@ -277,14 +278,14 @@ const vestedTokensAmountFormatted = computed(() => {
         return undefined
     }
 
-    return formatUnits(vestedTokensAmount.value, 18)
+    return formatDecimalPoint(formatUnits(vestedTokensAmount.value, 18))
 })
 
 const totalPwnTokens = computed(() => {
     return (vestedTokensAmount.value ?? 0n) + (stakedTokens.value ?? 0n) + (pwnTokenBalance.value ?? 0n)
 })
 const totalPwnTokensFormatted = computed(() => {
-    return formatUnits(totalPwnTokens.value ?? 0n, 18)
+    return formatDecimalPoint(formatUnits(totalPwnTokens.value ?? 0n, 18))
 })
 
 const showEpochSwitcher = import.meta.env.VITE_PUBLIC_SHOW_EPOCH_SWITCHER === 'true'

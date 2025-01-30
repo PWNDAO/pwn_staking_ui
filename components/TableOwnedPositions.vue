@@ -107,6 +107,7 @@ import { PWN_VESTING_MANAGER_ABI } from '~/constants/abis';
 import type {Address} from "abitype";
 import {shortenAddress} from "../utils/web3";
 import {getFormattedVotingPower} from "~/utils/parsing";
+import {formatDecimalPoint} from "~/utils/utils";
 
 const { address } = useAccount()
 const chainId = useChainIdTypesafe()
@@ -190,7 +191,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
         return {
             id: stake.stakeId,
             idText: String(stake.stakeId),
-            amount: formattedStakedAmount,
+            amount: formatDecimalPoint(formattedStakedAmount),
             votingPower: getFormattedVotingPower(formattedStakedAmount, multiplier),
             multiplier,
             lockUpEpochs: stake.lockUpEpochs,
@@ -226,7 +227,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
             userStakes.push({
                 id: BigInt(index + 1), // arbitrary number as vestings does not have stake id
                 idText: `Vesting ${index + 1}`,
-                amount: formatUnits(vestedToken.amount, 18),
+                amount: formatDecimalPoint(formatUnits(vestedToken.amount, 18)),
                 votingPower: '0',
                 multiplier: 0,
                 lockUpEpochs,
