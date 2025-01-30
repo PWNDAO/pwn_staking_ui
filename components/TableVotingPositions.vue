@@ -10,7 +10,8 @@
         </thead>
 
         <tbody>
-            <tr class="table-positions__tr" v-for="stake in sortedTableRowsData">
+            <tr v-for="stake in sortedTableRowsData"
+                :class="['table-positions__tr', {'table-positions__tr--disabled' : stake.isNextEpoch}]">
                 <td class="table-positions__td">
                     {{ stake.idText }}
                 </td>
@@ -93,10 +94,16 @@ const stakes = useUserStakes(address, chainId)
 
 const currentEpochQuery = useCurrentEpoch(chainId)
 const currentEpoch = computed(() => currentEpochQuery.data?.value)
+const nextEpoch = computed(() => currentEpoch?.value ? currentEpoch?.value + 1 : undefined)
 
 const userStakesWithVotingPowerQuery = useUserStakesWithVotingPower(address, currentEpoch, chainId)
+const userStakesWithVotingPowerQueryNextEpoch = useUserStakesWithVotingPower(address, nextEpoch, chainId)
 const userStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.data.value)
+const userStakesWithVotingPowerNextEpoch = computed(() => userStakesWithVotingPowerQueryNextEpoch.data.value)
 const userStakesWithVotingPowerFiltered = computed(() => userStakesWithVotingPower.value?.filter( stake => {
+  return address.value !== stake.owner
+}))
+const userStakesWithVotingPowerNextEpochFiltered = computed(() => userStakesWithVotingPowerNextEpoch.value?.filter( stake => {
   return address.value !== stake.owner
 }))
 
@@ -132,13 +139,13 @@ interface TableRowData {
     isVesting: boolean
     unlockEpoch: number
     owner: Address
+    isNextEpoch?: boolean
 }
 
 const tableRowsData = computed<TableRowData[]>(() => {
     if (stakes.data.value === undefined || secondsTillNextEpoch.value === undefined) {
         return []
     }
-
     const userStakes: TableRowData[] = userStakesWithVotingPowerFiltered?.value?.map(stake => {
         const formattedStakedAmount = formatUnits(stake.amount, 18)
 
@@ -179,7 +186,51 @@ const tableRowsData = computed<TableRowData[]>(() => {
             owner: stake.owner,
         }
     }) || []
-    return userStakes
+
+
+    const userNextEpochStakes : TableRowData[] = userStakesWithVotingPowerNextEpochFiltered?.value?.map(stake => {
+    const formattedStakedAmount = formatUnits(stake.amount, 18)
+
+    const multiplier = getMultiplierForLockUpEpochs(Math.min(stake.remainingEpochs, stake.lockUpEpochs))
+
+    let unlocksIn: number
+    let epochsRemaining: number
+    if (stake.remainingEpochs === 0) {
+      unlocksIn = 0
+      epochsRemaining = 0
+    } else if (stake.remainingEpochs > stake.lockUpEpochs) {
+      // happens in the epoch when user staked (voting power is granted only in the next epoch)
+      epochsRemaining = stake.lockUpEpochs
+      unlocksIn = secondsTillNextEpoch.value! + (epochsRemaining * SECONDS_IN_EPOCH)
+      // add fractional part to the epochsRemaining
+      epochsRemaining += (secondsTillNextEpoch.value! / SECONDS_IN_EPOCH)
+      epochsRemaining = Number(epochsRemaining.toFixed(1))
+    } else {
+      epochsRemaining = stake.remainingEpochs - 1
+      unlocksIn = secondsTillNextEpoch.value! + (epochsRemaining * SECONDS_IN_EPOCH)
+      // add fractional part to the epochsRemaining
+      epochsRemaining += (secondsTillNextEpoch.value! / SECONDS_IN_EPOCH)
+      epochsRemaining = Number(epochsRemaining.toFixed(1))
+    }
+
+    return {
+      id: stake.stakeId,
+      idText: String(stake.stakeId),
+      amount: formattedStakedAmount,
+      votingPower: String(Math.floor(Number(formattedStakedAmount) * multiplier)),
+      multiplier,
+      lockUpEpochs: stake.lockUpEpochs,
+      unlocksIn,
+      epochsRemaining,
+      votePowerStartsInNextEpoch: stake.remainingEpochs > stake.lockUpEpochs,
+      isVesting: false,
+      unlockEpoch: stake.initialEpoch + stake.lockUpEpochs,
+      owner: stake.owner,
+      isNextEpoch: true,
+    }
+  }) || []
+
+  return [...userStakes]
 })
 
 const COLUMNS_DEFINITION = [
@@ -329,6 +380,9 @@ const handleSortingIconClick = (newSortingProp: SortingProp) => {
         &:not(:first-child) {
             border-top: 1px solid var(--border-color);
         }
+      &--disabled {
+        opacity: 0.5;
+      }
     }
 
     &__td {

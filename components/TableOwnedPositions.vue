@@ -434,6 +434,9 @@ const upgradeToStakeTooltipText = computed(() => {
         &:not(:first-child) {
             border-top: 1px solid var(--border-color);
         }
+      &--disabled {
+        opacity: 0.5;
+      }
     }
 
     &__td {

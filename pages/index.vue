@@ -87,7 +87,7 @@
         <div v-if="isFetchingUserStakes || isFetchingVestings" class="homepage__table-positions-loader">
             <BaseSkeletor height="2" />
         </div>
-      <div v-if="hasAnyVotingDelegation" class="homepage__positions">
+      <div v-if="hasAnyVotingDelegation || hasAnyVotingDelegationNextEpoch" class="homepage__positions">
         <h3 class="homepage__positions-heading">Voting Power Only Positions ({{votingDelegationCount}})</h3>
         <TableVotingPositions/>
       </div>
@@ -106,7 +106,6 @@ import { calculateUserVotingMultiplier } from '~/utils/parsing';
 
 const { address } = useAccount()
 const chainId = useChainIdTypesafe()
-const {openModal} = useIncreaseStakeModal()
 
 const { epoch, setEpoch } = useManuallySetEpoch(chainId)
 const epochBigInt = computed(() => {
@@ -116,6 +115,7 @@ const epochBigInt = computed(() => {
 
     return BigInt(epoch.value)
 })
+const nextEpoch = computed(() => epoch?.value ? epoch?.value + 1 : undefined)
 
 const pwnTokenBalanceQuery = useUserPwnBalance(address, chainId)
 const pwnTokenBalance = computed(() => pwnTokenBalanceQuery?.data?.value)
@@ -194,8 +194,18 @@ const userStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.
 const userStakesWithVotingPowerFiltered = computed(() => userStakesWithVotingPower.value?.filter( stake => {
   return address.value !== stake.owner
 }))
+const userStakesWithVotingPowerNextEpochQuery = useUserStakesWithVotingPower(address, nextEpoch, chainId)
+const userStakesWithVotingPowerNextEpoch = computed(() => userStakesWithVotingPowerNextEpochQuery.data.value)
+
+//todo: do we need to filter out the current epoch ones here?
+const userStakesWithVotingPowerNextEpochFiltered = computed(() => userStakesWithVotingPowerNextEpoch.value?.filter( stake => {
+  return address.value !== stake.owner
+}))
+
 const votingDelegationCount = computed(() => userStakesWithVotingPowerFiltered.value?.length ?? 0)
+const votingDelegationCountNextEpoch = computed(() => userStakesWithVotingPowerNextEpochFiltered.value?.length ?? 0)
 const hasAnyVotingDelegation = computed(() => votingDelegationCount.value > 0)
+const hasAnyVotingDelegationNextEpoch = computed(() => votingDelegationCountNextEpoch.value > 0)
 
 
 const isFetchingUserStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.isLoading.value)
