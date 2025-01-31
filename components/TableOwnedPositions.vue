@@ -83,7 +83,7 @@
                   <span
                       v-else
                       class="link link--no-underline link--primary"
-                      @click="openModal(stake.id, Math.floor(stake.epochsRemaining), stake.amount)">
+                      @click="openModal(stake.id, stake.epochsRemaining, stake.amount)">
                     Increase Duration
                   </span>
                 </td>

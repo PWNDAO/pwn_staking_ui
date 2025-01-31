@@ -6,7 +6,7 @@
     <template #body>
       <div class="increase-stake-modal__body">
         <span class="increase-stake-modal__label">
-          Increase Duration (in epochs)
+          Increase Duration
         </span>
       </div>
       <VueSlider
@@ -20,15 +20,16 @@
         <template #tooltip="{ value }">
           <div
               :class="['increase-stake-modal__tooltip-text', {
+            'increase-stake-modal__tooltip-text--last-value': isLastValue(value),
           }]">
-            {{ value + ' Epochs' }}
+            {{ value*DAYS_IN_EPOCH }} days
           </div>
         </template>
         <template #dot>
           <div class="increase-stake-modal__dot"/>
         </template>
       </VueSlider>
-      <span class="increase-stake-modal__disclaimer"> Note: Stake can have duration only between 1 and 5 years, or 10 years.</span>
+      <span class="increase-stake-modal__disclaimer"> Note: Stake can be only increased by epochs.(28 days)<br> The new unlock date has to be between 1 and 5 years, or 10 years.</span>
       <div class="increase-stake-modal__comparison">
         <div class="increase-stake-modal__section">
           <div class="increase-stake-modal__section-title">Current Stake</div>
@@ -126,9 +127,9 @@ import useIncreaseStakeModal from "~/utils/useIncreaseStakeModal";
 import VueSlider from 'vue-3-slider-component'
 import {getFormattedVotingPower, getMultiplierForLockUpEpochs} from "~/utils/parsing";
 import {displayShortDate, formatSeconds} from "~/utils/date";
-import {SECONDS_IN_EPOCH} from "~/constants/contracts";
+import {DAYS_IN_EPOCH, SECONDS_IN_EPOCH} from "~/constants/contracts";
 import {sendTransaction} from "~/utils/useTransactions";
-import {useQueryClient} from "@tanstack/vue-query";
+import {useMutation, useQueryClient} from "@tanstack/vue-query";
 
 const {isOpen, stakeId, currentLockUpEpochs, formattedStakeAmount, calculateAvailableEpochs} = useIncreaseStakeModal()
 const heading = computed( () => `Increase Duration of Stake #${Number(stakeId.value)}`)
@@ -137,7 +138,6 @@ const additionalLockUpEpochs = ref(0)
 const chainId = useChainIdTypesafe()
 const initialEpochTimestampQuery = useInitialEpochTimestamp(chainId)
 const initialEpochTimestamp = computed(() => initialEpochTimestampQuery.data.value)
-const isPending = ref(false)
 const queryClient = useQueryClient()
 
 
@@ -170,21 +170,29 @@ const invalidateUserStakesQuery = () => {
   queryClient.invalidateQueries({queryKey: ['stakedPwnBalance']})
 }
 
+const { mutateAsync, isPending } = useMutation({
+  mutationFn: async() => {
+    if (!stakeId.value || !address.value || !additionalLockUpEpochs.value) return console.error('Missing required values')
+    return await sendTransaction({
+      abi: VE_PWN_TOKEN_ABI,
+      address: VE_PWN_TOKEN[getChainIdTypesafe()],
+      functionName: 'increaseStake',
+      chainId: getChainIdTypesafe(),
+      args: [stakeId.value, address.value, 0n, BigInt(additionalLockUpEpochs.value)]
+    })
+  },
+  onSuccess() {
+    isOpen.value = false
+    invalidateUserStakesQuery()
+  },
+})
 // TODO LATER: also allow for increasing amount, now only works to increase time
 const increaseStakeAction = async () => {
-  if (!stakeId.value || !address.value || !additionalLockUpEpochs.value) return console.error('Missing required values')
-  isPending.value = true
-  await sendTransaction({
-    abi: VE_PWN_TOKEN_ABI,
-    address: VE_PWN_TOKEN[getChainIdTypesafe()],
-    functionName: 'increaseStake',
-    chainId: getChainIdTypesafe(),
-    args: [stakeId.value, address.value, 0n, BigInt(additionalLockUpEpochs.value)]
-  })
-  invalidateUserStakesQuery()
-  isPending.value = false
-  isOpen.value = false
-  //todo: refetch data
+  await mutateAsync()
+}
+
+const isLastValue = (value: number) => {
+  return value === calculatedEpochs.value[calculatedEpochs.value.length - 1]
 }
 </script>
 
@@ -201,6 +209,9 @@ const increaseStakeAction = async () => {
     text-transform: uppercase;
     color: var(--text-color);
     white-space: nowrap;
+    &--last-value{
+      color: var(--negative)
+    }
   }
   &__dot {
     width: 2rem;
@@ -321,15 +332,16 @@ const increaseStakeAction = async () => {
     justify-content: center;
     align-items: center;
     gap: 0.5rem;
-    color: var(--text, #F3F1FF);
+    color: var(--primary-color);
     text-align: center;
     font-family: var(--font-family-screener);
     font-size: 0.875rem;
-    background: #1C1C1C;
     border: none;
+    background: var(--primary-color-3);
+
     &:hover {
+      background: var(--primary-color-2);
       cursor: pointer;
-      background: #2D2D2D;
       &:disabled{
         cursor: not-allowed;
       }

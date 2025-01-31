@@ -11,7 +11,7 @@ export default function useIncreaseStakeModal() {
     const openModal = (stakeIdVal: bigint, lockUpEpochs: number, stakeAmount: string) => {
         isOpen.value = true
         stakeId.value = stakeIdVal
-        currentLockUpEpochs.value = lockUpEpochs
+        currentLockUpEpochs.value = Math.floor(lockUpEpochs)
         formattedStakeAmount.value = stakeAmount
     }
 

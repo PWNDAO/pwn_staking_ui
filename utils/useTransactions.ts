@@ -49,15 +49,15 @@ export async function sendTransaction<
     transaction: WriteContractVariables<TAbi, TFunctionName, TArgs, PwnWagmiConfig, PwnWagmiConfig['chains'][number]['id']>,
     { hooks, step }: SendTransactionOptions = {},
 ): Promise<TransactionReceipt> {
-    // console.log('Starting to send a transaction with following parameters:')
-    // console.log(transaction)
-    // console.log(`Additional UI parameter passed to sendTransaction: step=${step?.text}, safeAddress=${safeAddress}`)
+    console.log('Starting to send a transaction with following parameters:')
+    console.log(transaction)
+    //console.log(`Additional UI parameter passed to sendTransaction: step=${step?.text}, safeAddress=${safeAddress}`)
 
     const connectedChainId = getAccount(wagmiAdapter.wagmiConfig).chainId
     console.log(`connectedChainId=${connectedChainId}; transaction.chainId=${transaction.chainId}`)
 
     if (connectedChainId !== transaction.chainId) {
-        // console.log(`Switching chain from ${connectedChainId} to ${transaction.chainId}.`)
+        console.log(`Switching chain from ${connectedChainId} to ${transaction.chainId}.`)
         const switchedChain = await switchChain(wagmiAdapter.wagmiConfig, { chainId: transaction.chainId! })
         if (switchedChain.id !== transaction.chainId) {
             throw new Error('User denied switching chains before sending a tx.')

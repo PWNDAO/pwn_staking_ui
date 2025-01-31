@@ -227,8 +227,6 @@ const tableRowsData = computed<TableRowData[]>(() => {
       isNextEpoch: true,
     }
   }) || []
-    console.log('user stakes', userStakes)
-  console.log('user stakes next', userNextEpochStakes)
   return [...userStakes, ...userNextEpochStakes]
 })
 
