@@ -19,6 +19,8 @@
     --black-base: 17 17 17;
     --background-color-base: var(--black-base);
     --background-color-half-transparent: rgb(var(--background-color-base) / 75%);
+    --white-base: 243 241 255;
+    --white: rgb(var(--white-base)); /* same as: #F3F1FF */
 
     /* === FONTS === */
     --font-family-screener: "Screener", "sans-serif";

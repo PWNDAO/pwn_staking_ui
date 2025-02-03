@@ -16,18 +16,6 @@ export const useConnectedAccountTypeStore = defineStore('connectedAccountType', 
     })
     const isConnectedContractWallet = computed(() => !!bytecodeAtUserAddress.value)
 
-    /*
-    const { data: connectedPwnSafe } = useQuery({
-        ...queries.safe.detail(userAddress, connectedChainId),
-        enabled: isConnected,
-        staleTime: Infinity,
-        retry: 0,
-        refetchOnMount: false,
-        refetchOnWindowFocus: false,
-    })
-    const isConnectedPwnSafe = computed(() => !!connectedPwnSafe.value)
-    */
-
     return {
         isConnectedContractWallet,
     }

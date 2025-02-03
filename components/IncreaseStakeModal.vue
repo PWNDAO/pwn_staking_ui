@@ -29,7 +29,7 @@
           <div class="increase-stake-modal__dot"/>
         </template>
       </VueSlider>
-      <span class="increase-stake-modal__disclaimer"> Note: Stake can be only increased by epochs.(28 days)<br> The new unlock date has to be between 1 and 5 years, or 10 years.</span>
+      <span class="increase-stake-modal__disclaimer"> Note: Stake can be only increased by epochs (28 days).<br> The new unlock date has to be between 1 and 5 years, or 10 years.</span>
       <div class="increase-stake-modal__comparison">
         <div class="increase-stake-modal__section">
           <div class="increase-stake-modal__section-title">Current Stake</div>
@@ -98,6 +98,9 @@
           </div>
         </div>
       </div>
+      <BaseCheckbox v-if="isLastValue(additionalLockUpEpochs)"
+                    v-model="isCheckboxTicked"
+                    :label="checkboxLabel"/>
       <div class="increase-stake-modal__submit">
         <BaseTooltip
             style="width: 100%"
@@ -130,6 +133,7 @@ import {displayShortDate, formatSeconds} from "~/utils/date";
 import {DAYS_IN_EPOCH, SECONDS_IN_EPOCH} from "~/constants/contracts";
 import {sendTransaction} from "~/utils/useTransactions";
 import {useMutation, useQueryClient} from "@tanstack/vue-query";
+import BaseCheckbox from "~/components/BaseCheckbox.vue";
 
 const {isOpen, stakeId, currentLockUpEpochs, formattedStakeAmount, calculateAvailableEpochs} = useIncreaseStakeModal()
 const heading = computed( () => `Increase Duration of Stake #${Number(stakeId.value)}`)
@@ -139,6 +143,7 @@ const chainId = useChainIdTypesafe()
 const initialEpochTimestampQuery = useInitialEpochTimestamp(chainId)
 const initialEpochTimestamp = computed(() => initialEpochTimestampQuery.data.value)
 const queryClient = useQueryClient()
+const isCheckboxTicked = ref(false)
 
 
 
@@ -156,6 +161,7 @@ const finalLockUpEpochs = computed(() => currentLockUpEpochs.value + additionalL
 const calculatedEpochs = computed(() => {
   return calculateAvailableEpochs()
 })
+const checkboxLabel = computed( () => `I understand that this action will prolong my stake by ${calculatedEpochs.value[calculatedEpochs.value.length - 1] * DAYS_IN_EPOCH} days`)
 
 watch(isOpen, (newVal) => {
   if (newVal) {
@@ -163,7 +169,11 @@ watch(isOpen, (newVal) => {
   }
 })
 
-const isButtonDisabled = computed(() => !stakeId.value || !address.value || isPending.value || !additionalLockUpEpochs.value)
+const isButtonDisabled = computed(() => {
+  if (isLastValue(additionalLockUpEpochs.value))
+    return !stakeId.value || !address.value || isPending.value || !additionalLockUpEpochs.value || !isCheckboxTicked.value
+  return !stakeId.value || !address.value || isPending.value || !additionalLockUpEpochs.value
+})
 const tooltipText = computed(() => isButtonDisabled.value ? 'Please select duration.' : '')
 const invalidateUserStakesQuery = () => {
   queryClient.invalidateQueries({queryKey: ['userStakesWithVotingPower']})
@@ -209,6 +219,7 @@ const isLastValue = (value: number) => {
     text-transform: uppercase;
     color: var(--text-color);
     white-space: nowrap;
+    padding-left: 1.25rem;
     &--last-value{
       color: var(--negative)
     }
@@ -322,7 +333,6 @@ const isLastValue = (value: number) => {
   &__submit{
     display: flex;
     justify-content: center;
-    margin-top: 1rem;
     width: 100%;
   }
   &__submit-button{
