@@ -7,7 +7,7 @@ import type { AnyFunction, IntervalId } from '@/types/customTypes'
 import { safeWalletAbi } from '@/constants/abis'
 import { useConnectedAccountTypeStore } from '@/utils/web3/useConnectedAccountTypeStore'
 import {wagmiAdapter} from "@/wagmi"
-import type {PwnWagmiConfig} from "@/utils/web3/usePwnWagmiConfig"
+import type { PwnWagmiConfig } from '@/wagmi'
 
 /* eslint-disable no-console */
 
