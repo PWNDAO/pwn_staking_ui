@@ -98,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { useAccount } from '@wagmi/vue'
+import { useAccount, type Config } from '@wagmi/vue'
 import { disconnect } from 'wagmi/actions'
 import { wagmiAdapter } from '~/wagmi'
 import { onClickOutside } from '@vueuse/core'
@@ -155,6 +155,7 @@ const walletText = computed(() => {
 
 const handleWalletClick = async () => {
   if (isConnected.value) {
+    // @ts-expect-error not sure why it throws
     await disconnect(wagmiAdapter.wagmiConfig)
   } else {
     await openAppKitModal()

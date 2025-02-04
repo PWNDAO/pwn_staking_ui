@@ -4,7 +4,9 @@
             <tr>
                 <th class="table-positions__th" scope="col" :style="{'width': column.width}" v-for="column in COLUMNS_DEFINITION">
                     {{ column.text }}
-                    <SortingIcon @click="event => handleSortingIconClick(column.id)" :direction="sortingProp === column.id ? sortingDirection : 'none'" />
+                    <SortingIcon v-if="column.id !== 'actions'"
+                                 @click="event => handleSortingIconClick(column.id)"
+                                 :direction="sortingProp === column.id ? sortingDirection : 'none'" />
                 </th>
             </tr>
         </thead>
@@ -14,11 +16,11 @@
                 <td class="table-positions__td">
                     {{ stake.idText }}
                 </td>
-                <td class="table-positions__td">{{ stake.amount }}</td>
+                <td class="table-positions__td">{{ formatDecimalPoint(stake.amount) }}</td>
                 <td class="table-positions__td">
-                    <div v-if="stake.votePowerStartsInNextEpoch" class="table-positions__not-yet-voting-power-wrapper">
+                  <div v-if="stake.votePowerStartsInNextEpoch" class="table-positions__not-yet-voting-power-wrapper">
                         <span class="table-positions__td-text--greyed">
-                            {{ stake.votingPower }}
+                            {{ formatDecimalPoint(stake.votingPower) }}
                         </span>
                         <BaseTooltip
                             :tooltip-text="`You will gain your voting power in next epoch, which will be in ${timeTillNextEpoch}.`"
@@ -28,16 +30,11 @@
                             </template>
                         </BaseTooltip>
                     </div>
-                    <span v-else :class="{'table-positions__td-text--greyed': stake.isVesting}">
-                        {{ stake.votingPower }}
+                  <div v-else>
+                    <span :class="{'table-positions__td-text--greyed': stake.isVesting}">
+                        {{ formatDecimalPoint(stake.votingPower) }}
                     </span>
-                    <BaseTooltip :tooltip-text="upgradeToStakeTooltipText">
-                        <template #trigger>
-                            <button :disabled="isUpgradingToStake" class="table-positions__upgrade-btn" v-if="stake.isVesting" @click="upgradeToStake(stake.unlockEpoch, DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP)">
-                                {{ isUpgradingToStake ? 'Upgrading...' : 'Upgrade to stake' }}
-                            </button>
-                        </template>
-                    </BaseTooltip>
+                  </div>
                 </td>
                 <td class="table-positions__td">
                     <template v-if="stake.votePowerStartsInNextEpoch">
@@ -75,6 +72,21 @@
                         </span>
                     </template>
                 </td>
+                <td class="table-positions__td">
+                  <BaseTooltip  v-if="stake.isVesting" :tooltip-text="upgradeToStakeTooltipText">
+                    <template #trigger>
+                      <button :disabled="isUpgradingToStake" class="table-positions__upgrade-btn" @click="upgradeToStake(stake.unlockEpoch, DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP)">
+                        {{ isUpgradingToStake ? 'Upgrading...' : 'Upgrade to stake' }}
+                      </button>
+                    </template>
+                  </BaseTooltip>
+                  <span
+                      v-else
+                      class="link link--no-underline link--primary"
+                      @click="openModal(stake.id, stake.epochsRemaining, stake.amount)">
+                    Increase Duration
+                  </span>
+                </td>
             </tr>
         </tbody>
     </table>
@@ -94,6 +106,8 @@ import { PWN_VESTING_MANAGER } from '~/constants/addresses';
 import { PWN_VESTING_MANAGER_ABI } from '~/constants/abis';
 import type {Address} from "abitype";
 import {shortenAddress} from "../utils/web3";
+import {getFormattedVotingPower} from "~/utils/parsing";
+import {formatDecimalPoint} from "~/utils/utils";
 
 const { address } = useAccount()
 const chainId = useChainIdTypesafe()
@@ -103,8 +117,7 @@ const stakes = useUserStakes(address, chainId)
 const vestedTokensQuery = useUserVestedTokens(address, chainId)
 const vestedTokens = computed(() => vestedTokensQuery.data?.value)
 
-const currentEpochQuery = useCurrentEpoch(chainId)
-const currentEpoch = computed(() => currentEpochQuery.data?.value)
+const {epoch: currentEpoch} = useManuallySetEpoch(chainId)
 
 const initialEpochTimestampQuery = useInitialEpochTimestamp(chainId)
 const initialEpochTimestamp = computed(() => initialEpochTimestampQuery.data.value)
@@ -142,6 +155,7 @@ interface TableRowData {
 }
 
 const stakeIds = computed(() => stakes.data.value?.map(stake => stake.stakeId) ?? [])
+const { openModal } = useIncreaseStakeModal()
 const logs = useAllBeneficiaries(address, stakeIds.value, chainId)
 
 const tableRowsData = computed<TableRowData[]>(() => {
@@ -177,7 +191,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
             id: stake.stakeId,
             idText: String(stake.stakeId),
             amount: formattedStakedAmount,
-            votingPower: String(Math.floor(Number(formattedStakedAmount) * multiplier)),
+            votingPower: getFormattedVotingPower(formattedStakedAmount, multiplier),
             multiplier,
             lockUpEpochs: stake.lockUpEpochs,
             duration: stake.lockUpEpochs * SECONDS_IN_EPOCH,
@@ -239,12 +253,12 @@ const COLUMNS_DEFINITION = [
     {
         id: 'amount',
         text: 'Amount',
-        width: '20%',
+        width: '15%',
     },
     {
         id: 'votingPower',
         text: 'Voting Power',
-        width: '20%',
+        width: '15%',
     },
     {
         id: 'multiplier',
@@ -261,6 +275,11 @@ const COLUMNS_DEFINITION = [
         text: 'Unlocks in',
         width: '20%',
     },
+  {
+    id: 'actions',
+    text: 'Actions',
+    width: '10%',
+  }
 ] as const
 
 type SortingProp = typeof COLUMNS_DEFINITION[number]['id']
@@ -321,6 +340,9 @@ const sortedTableRowsData = computed(() => {
                 } else {
                     return a.unlocksIn > b.unlocksIn ? 1 : -1
                 }
+            }
+            default: {
+                return 0
             }
         }
     })
@@ -412,6 +434,9 @@ const upgradeToStakeTooltipText = computed(() => {
         &:not(:first-child) {
             border-top: 1px solid var(--border-color);
         }
+      &--disabled {
+        opacity: 0.5;
+      }
     }
 
     &__td {
@@ -448,7 +473,8 @@ const upgradeToStakeTooltipText = computed(() => {
         display: inline-flex;
         align-items: center;
         height: 2rem;
-        padding: 0 1rem;
+        padding: 0 0.5rem;
+        margin: 0.5rem 0;
 
         transition: all 0.3s;
         color: var(--primary-color);
@@ -457,8 +483,6 @@ const upgradeToStakeTooltipText = computed(() => {
         border-width: 1px;
         border-style: solid;
         font-family: var(--font-family-screener);
-
-        margin-left: 1rem;
 
         &:hover {
             background: var(--primary-color-2);

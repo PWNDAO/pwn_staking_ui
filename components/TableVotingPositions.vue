@@ -10,15 +10,16 @@
         </thead>
 
         <tbody>
-            <tr class="table-positions__tr" v-for="stake in sortedTableRowsData">
+            <tr v-for="stake in sortedTableRowsData"
+                :class="['table-positions__tr', {'table-positions__tr--disabled' : stake.isNextEpoch}]">
                 <td class="table-positions__td">
                     {{ stake.idText }}
                 </td>
-                <td class="table-positions__td">{{ stake.amount }}</td>
+                <td class="table-positions__td">{{ formatDecimalPoint(stake.amount) }}</td>
                 <td class="table-positions__td">
                     <div v-if="stake.votePowerStartsInNextEpoch" class="table-positions__not-yet-voting-power-wrapper">
                         <span class="table-positions__td-text--greyed">
-                            {{ stake.votingPower }}
+                            {{ formatDecimalPoint(stake.votingPower) }}
                         </span>
                         <BaseTooltip
                             :tooltip-text="`You will gain your voting power in next epoch, which will be in ${timeTillNextEpoch}.`"
@@ -29,7 +30,7 @@
                         </BaseTooltip>
                     </div>
                     <span v-else :class="{'table-positions__td-text--greyed': stake.isVesting}">
-                        {{ stake.votingPower }}
+                        {{ formatDecimalPoint(stake.votingPower) }}
                     </span>
                 </td>
                 <td class="table-positions__td">
@@ -73,31 +74,35 @@
 
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core';
-import { useAccount, useWriteContract } from '@wagmi/vue';
+import { useAccount } from '@wagmi/vue';
 import { formatUnits, parseUnits } from 'viem';
-import { SECONDS_IN_EPOCH, MIN_STAKE_DURATION_IN_EPOCH } from '~/constants/contracts';
+import { SECONDS_IN_EPOCH } from '~/constants/contracts';
 import { formatSeconds } from '@/utils/date';
 import { TooltipBorderColor } from './BaseTooltip.vue';
 import { useChainIdTypesafe } from '~/constants/chain';
-import { useCurrentEpoch, useUserStakesWithVotingPower} from '~/utils/hooks';
-import { wagmiAdapter } from '~/wagmi';
-import { PWN_VESTING_MANAGER } from '~/constants/addresses';
-import { PWN_VESTING_MANAGER_ABI } from '~/constants/abis';
+import {useCurrentEpoch, useManuallySetEpoch, useUserStakesWithVotingPower} from '~/utils/hooks';
 import type {Address} from "abitype";
 import {shortenAddress} from "../utils/web3";
+import {formatDecimalPoint} from "~/utils/utils";
+import {getFormattedVotingPower} from "~/utils/parsing";
 
 const { address } = useAccount()
 const chainId = useChainIdTypesafe()
 
 const stakes = useUserStakes(address, chainId)
 
-const currentEpochQuery = useCurrentEpoch(chainId)
-const currentEpoch = computed(() => currentEpochQuery.data?.value)
+const {epoch: currentEpoch} = useManuallySetEpoch(chainId)
+const nextEpoch = computed(() => currentEpoch?.value ? currentEpoch?.value + 1 : undefined)
 
 const userStakesWithVotingPowerQuery = useUserStakesWithVotingPower(address, currentEpoch, chainId)
+const userStakesWithVotingPowerQueryNextEpoch = useUserStakesWithVotingPower(address, nextEpoch, chainId)
 const userStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.data.value)
+const userStakesWithVotingPowerNextEpoch = computed(() => userStakesWithVotingPowerQueryNextEpoch.data.value)
 const userStakesWithVotingPowerFiltered = computed(() => userStakesWithVotingPower.value?.filter( stake => {
   return address.value !== stake.owner
+}))
+const userStakesWithVotingPowerNextEpochFiltered = computed(() => userStakesWithVotingPowerNextEpoch.value?.filter( stake => {
+  return address.value !== stake.owner && !userStakesWithVotingPowerFiltered.value?.find(s => s.stakeId === stake.stakeId)
 }))
 
 const initialEpochTimestampQuery = useInitialEpochTimestamp(chainId)
@@ -132,13 +137,13 @@ interface TableRowData {
     isVesting: boolean
     unlockEpoch: number
     owner: Address
+    isNextEpoch?: boolean
 }
 
 const tableRowsData = computed<TableRowData[]>(() => {
     if (stakes.data.value === undefined || secondsTillNextEpoch.value === undefined) {
         return []
     }
-
     const userStakes: TableRowData[] = userStakesWithVotingPowerFiltered?.value?.map(stake => {
         const formattedStakedAmount = formatUnits(stake.amount, 18)
 
@@ -168,7 +173,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
             id: stake.stakeId,
             idText: String(stake.stakeId),
             amount: formattedStakedAmount,
-            votingPower: String(Math.floor(Number(formattedStakedAmount) * multiplier)),
+            votingPower: getFormattedVotingPower(formattedStakedAmount, multiplier),
             multiplier,
             lockUpEpochs: stake.lockUpEpochs,
             unlocksIn,
@@ -179,7 +184,50 @@ const tableRowsData = computed<TableRowData[]>(() => {
             owner: stake.owner,
         }
     }) || []
-    return userStakes
+
+
+    const userNextEpochStakes : TableRowData[] = userStakesWithVotingPowerNextEpochFiltered?.value?.map(stake => {
+    const formattedStakedAmount = formatUnits(stake.amount, 18)
+
+    const multiplier = getMultiplierForLockUpEpochs(Math.min(stake.remainingEpochs, stake.lockUpEpochs))
+
+    let unlocksIn: number
+    let epochsRemaining: number
+    if (stake.remainingEpochs === 0) {
+      unlocksIn = 0
+      epochsRemaining = 0
+    } else if (stake.remainingEpochs > stake.lockUpEpochs) {
+      // happens in the epoch when user staked (voting power is granted only in the next epoch)
+      epochsRemaining = stake.lockUpEpochs
+      unlocksIn = secondsTillNextEpoch.value! + (epochsRemaining * SECONDS_IN_EPOCH)
+      // add fractional part to the epochsRemaining
+      epochsRemaining += (secondsTillNextEpoch.value! / SECONDS_IN_EPOCH)
+      epochsRemaining = Number(epochsRemaining.toFixed(1))
+    } else {
+      epochsRemaining = stake.remainingEpochs - 1
+      unlocksIn = secondsTillNextEpoch.value! + (epochsRemaining * SECONDS_IN_EPOCH)
+      // add fractional part to the epochsRemaining
+      epochsRemaining += (secondsTillNextEpoch.value! / SECONDS_IN_EPOCH)
+      epochsRemaining = Number(epochsRemaining.toFixed(1))
+    }
+
+    return {
+      id: stake.stakeId,
+      idText: String(stake.stakeId),
+      amount: formattedStakedAmount,
+      votingPower: getFormattedVotingPower(formattedStakedAmount, multiplier),
+      multiplier,
+      lockUpEpochs: stake.lockUpEpochs,
+      unlocksIn,
+      epochsRemaining,
+      votePowerStartsInNextEpoch: stake.remainingEpochs > stake.lockUpEpochs,
+      isVesting: false,
+      unlockEpoch: stake.initialEpoch + stake.lockUpEpochs,
+      owner: stake.owner,
+      isNextEpoch: true,
+    }
+  }) || []
+  return [...userStakes, ...userNextEpochStakes]
 })
 
 const COLUMNS_DEFINITION = [
@@ -329,6 +377,9 @@ const handleSortingIconClick = (newSortingProp: SortingProp) => {
         &:not(:first-child) {
             border-top: 1px solid var(--border-color);
         }
+      &--disabled {
+        opacity: 0.5;
+      }
     }
 
     &__td {

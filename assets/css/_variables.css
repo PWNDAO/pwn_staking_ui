@@ -15,11 +15,34 @@
     --negative: #f97600;
     --danger: #fe3033;
     --grey: #828282;
+    --black-input: #080808;
+    --black-base: 17 17 17;
+    --background-color-base: var(--black-base);
+    --background-color-half-transparent: rgb(var(--background-color-base) / 75%);
+    --white-base: 243 241 255;
+    --white: rgb(var(--white-base)); /* same as: #F3F1FF */
 
     /* === FONTS === */
     --font-family-screener: "Screener", "sans-serif";
     --font-family-supreme: "Supreme", "monospace";
-
+    /* ===== TRANSITIONS / ANIMATIONS ===== */
+    --primary-transition-time: 0.3s;
     /* ===== BORDERS ===== */
     --border-gray-dashed: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' stroke='%23828282FF' stroke-width='2' stroke-dasharray='4 12' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+
+    /* ===== Z-INDEX ===== */
+    --z-index-modal: 200;
+
+    /* ===== SPACING ===== */
+    --app-max-width: 1367px;
+
+    /* ===== MODAL SIZING ===== */
+    --modal-size-x-small: 0.3;
+    --modal-size-small: 0.5;
+    --modal-size-medium: 0.6;
+    --modal-size-large: 0.7;
+    --modal-size-x-large: 0.9;
+    --modal-size-medium-mobile: 0.95;
+    --modal-size-small-mobile: 0.8;
+    --modal-size-large-mobile: 0.8;
 }

@@ -87,12 +87,13 @@
         <div v-if="isFetchingUserStakes || isFetchingVestings" class="homepage__table-positions-loader">
             <BaseSkeletor height="2" />
         </div>
-      <div v-if="hasAnyVotingDelegation" class="homepage__positions">
+      <div v-if="hasAnyVotingDelegation || hasAnyVotingDelegationNextEpoch" class="homepage__positions">
         <h3 class="homepage__positions-heading">Voting Power Only Positions ({{votingDelegationCount}})</h3>
         <TableVotingPositions/>
       </div>
 
     </div>
+    <IncreaseStakeModal/>
 </template>
 
 <script setup lang="ts">
@@ -102,6 +103,7 @@ import { getChainIdToToggleTo, toggleActiveChain, useChainIdTypesafe } from '~/c
 import { SECONDS_IN_EPOCH } from '~/constants/contracts';
 import { useUserStakesWithVotingPower } from '~/utils/hooks';
 import { calculateUserVotingMultiplier } from '~/utils/parsing';
+import {formatDecimalPoint} from "~/utils/utils";
 
 const { address } = useAccount()
 const chainId = useChainIdTypesafe()
@@ -114,6 +116,7 @@ const epochBigInt = computed(() => {
 
     return BigInt(epoch.value)
 })
+const nextEpoch = computed(() => epoch?.value ? epoch?.value + 1 : undefined)
 
 const pwnTokenBalanceQuery = useUserPwnBalance(address, chainId)
 const pwnTokenBalance = computed(() => pwnTokenBalanceQuery?.data?.value)
@@ -122,7 +125,7 @@ const pwnTokenBalanceFormatted = computed(() => {
         return 'None'
     }
 
-    return formatUnits(pwnTokenBalance.value, 18)
+    return formatDecimalPoint(formatUnits(pwnTokenBalance.value, 18))
 })
 const isFetchingPwnTokenBalance = computed(() => pwnTokenBalanceQuery.isLoading.value)
 
@@ -146,7 +149,7 @@ const stakedTokensFormatted = computed(() => {
         return 'None'
     }
 
-    return formatUnits(stakedTokens.value, 18)
+    return formatDecimalPoint(formatUnits(stakedTokens.value, 18))
 })
 const currentEpochQuery = useCurrentEpoch(chainId)
 const currentEpoch = computed(() => {
@@ -182,7 +185,7 @@ const votingPowerFormatted = computed(() => {
         return 'No voting power'
     }
 
-    return formatUnits(votingPower.value, 18)
+    return formatDecimalPoint(formatUnits(votingPower.value, 18))
 })
 const isFetchingVotingPower = computed(() => votingPowerQuery.isLoading.value)
 
@@ -192,8 +195,18 @@ const userStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.
 const userStakesWithVotingPowerFiltered = computed(() => userStakesWithVotingPower.value?.filter( stake => {
   return address.value !== stake.owner
 }))
+const userStakesWithVotingPowerNextEpochQuery = useUserStakesWithVotingPower(address, nextEpoch, chainId)
+const userStakesWithVotingPowerNextEpoch = computed(() => userStakesWithVotingPowerNextEpochQuery.data.value)
+
+//todo: do we need to filter out the current epoch ones here?
+const userStakesWithVotingPowerNextEpochFiltered = computed(() => userStakesWithVotingPowerNextEpoch.value?.filter( stake => {
+  return address.value !== stake.owner
+}))
+
 const votingDelegationCount = computed(() => userStakesWithVotingPowerFiltered.value?.length ?? 0)
+const votingDelegationCountNextEpoch = computed(() => userStakesWithVotingPowerNextEpochFiltered.value?.length ?? 0)
 const hasAnyVotingDelegation = computed(() => votingDelegationCount.value > 0)
+const hasAnyVotingDelegationNextEpoch = computed(() => votingDelegationCountNextEpoch.value > 0)
 
 
 const isFetchingUserStakesWithVotingPower = computed(() => userStakesWithVotingPowerQuery.isLoading.value)
@@ -265,14 +278,14 @@ const vestedTokensAmountFormatted = computed(() => {
         return undefined
     }
 
-    return formatUnits(vestedTokensAmount.value, 18)
+    return formatDecimalPoint(formatUnits(vestedTokensAmount.value, 18))
 })
 
 const totalPwnTokens = computed(() => {
     return (vestedTokensAmount.value ?? 0n) + (stakedTokens.value ?? 0n) + (pwnTokenBalance.value ?? 0n)
 })
 const totalPwnTokensFormatted = computed(() => {
-    return formatUnits(totalPwnTokens.value ?? 0n, 18)
+    return formatDecimalPoint(formatUnits(totalPwnTokens.value ?? 0n, 18))
 })
 
 const showEpochSwitcher = import.meta.env.VITE_PUBLIC_SHOW_EPOCH_SWITCHER === 'true'

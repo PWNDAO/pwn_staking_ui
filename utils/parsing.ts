@@ -6,6 +6,7 @@ import { getChainIdTypesafe } from "~/constants/chain"
 import { SECONDS_IN_EPOCH } from "~/constants/contracts"
 import type { StakeDetail } from "~/types/contractResults"
 import { wagmiAdapter } from "~/wagmi"
+import {formatDecimalPoint} from "~/utils/utils";
 
 export const calculateUserVotingMultiplier = (epochToCalculateIn: number, stakesWithVotingPower: Readonly<StakeDetail[]>): number => {
     // calculating weight average
@@ -25,6 +26,9 @@ export const calculateUserVotingMultiplier = (epochToCalculateIn: number, stakes
     return numerator / denominator
 }
 
+export const getFormattedVotingPower = (formattedAmount: string, multiplier: number): string => {
+    return String(Math.floor(Number(formattedAmount) * multiplier))
+}
 export const getMultiplierForLockUpEpochs = (lockUpEpochs: number) => {
     const EPOCHS_IN_YEAR = 13
 
@@ -54,7 +58,7 @@ export const getSecondsTillNextEpoch = (initialEpochTimestamp: number): number =
     // Calculate time remaining until next epoch
     return nextEpochTimestamp - currentTimestamp;
   }
-  
+
 
 export const getTimeTillNextEpochStringified = (initialEpochTimestamp: number): string => {
     return formatSeconds(getSecondsTillNextEpoch(initialEpochTimestamp))

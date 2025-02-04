@@ -66,6 +66,8 @@ export const wagmiAdapter = new WagmiAdapter({
   } satisfies Record<SupportedChain, unknown>,
 })
 
+export type PwnWagmiConfig = typeof wagmiAdapter.wagmiConfig
+
 createAppKit({
   adapters: [wagmiAdapter],
   networks: viemChains,

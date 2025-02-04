@@ -2,9 +2,13 @@
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>
+  <VueQueryDevtools
+      button-position="bottom-right"
+      position="right"/>
 </template>
 
 <script lang="ts" setup>
+import { VueQueryDevtools } from '@tanstack/vue-query-devtools'
 useSeoMeta({
   title: 'PWN DAO Staking',
   ogTitle: 'PWN DAO Staking',
