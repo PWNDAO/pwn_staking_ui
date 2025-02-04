@@ -98,6 +98,7 @@
           </div>
         </div>
       </div>
+      <span class="increase-stake-modal__disclaimer"> Note: The voting power will only increase at the start of the next epoch ({{timeTillNextEpoch}}).</span>
       <BaseCheckbox v-if="isLastValue(additionalLockUpEpochs)"
                     v-model="isCheckboxTicked"
                     :label="checkboxLabel"/>
@@ -154,7 +155,13 @@ const secondsTillNextEpoch = computed(() => {
 
   return getSecondsTillNextEpoch(Number(initialEpochTimestamp.value))
 })
+const timeTillNextEpoch = computed(() => {
+  if (secondsTillNextEpoch.value === undefined) {
+    return undefined
+  }
 
+  return formatSeconds(secondsTillNextEpoch.value)
+})
 
 const finalLockUpEpochs = computed(() => currentLockUpEpochs.value + additionalLockUpEpochs.value)
 
