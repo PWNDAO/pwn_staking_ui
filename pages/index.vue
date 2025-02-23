@@ -23,7 +23,10 @@
                     <div class="homepage__pwn-balance-value">
                       <BaseSkeletor v-if="isFetchingPwnTokenBalance || isFetchingVestings || isFetchingUserStakes " height="2" />
                       <span v-else>
-                        {{ totalPwnTokensFormatted }} PWN
+                        <div class="homepage__pwn-balance-value-wrapper">
+                        <span> {{ totalPwnTokensFormatted }} PWN</span>
+                        <button class="homepage__stake-button" @click="openStakeTokensModal">Stake Tokens</button>
+                        </div>
                       </span>
                     </div>
                 </div>
@@ -94,6 +97,7 @@
 
     </div>
     <IncreaseStakeModal/>
+    <CreateStakeModal ref="createStakeModal"/>
 </template>
 
 <script setup lang="ts">
@@ -104,6 +108,8 @@ import { SECONDS_IN_EPOCH } from '~/constants/contracts';
 import { useUserStakesWithVotingPower } from '~/utils/hooks';
 import { calculateUserVotingMultiplier } from '~/utils/parsing';
 import {formatDecimalPoint} from "~/utils/utils";
+import CreateStakeModal from '~/components/CreateStakeModal.vue';
+import { ref } from 'vue';
 
 const { address } = useAccount()
 const chainId = useChainIdTypesafe()
@@ -296,6 +302,12 @@ const chainIdToToggleTo = computed(() => getChainIdToToggleTo(chainId.value))
 const switchChain = () => {
     toggleActiveChain(chainId.value)
 }
+
+const createStakeModal = ref()
+
+const openStakeTokensModal = () => {
+  createStakeModal.value?.openModal()
+}
 </script>
 
 <style scoped>
@@ -351,6 +363,12 @@ const switchChain = () => {
         margin-top: 1.5rem;
     }
 
+    &__pwn-balance-value-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
     &__summary-container {
         display: flex;
         column-gap: 1.5rem;
@@ -393,6 +411,25 @@ const switchChain = () => {
         @media (max-width: 830px) {
             min-width: 680px;
         }
+    }
+
+    &__stake-button {
+        display: flex;
+        padding: 0.75rem 1rem;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--Primary, #00FFE0);
+        text-align: center;
+        background: var(--teal-teal-10, #0F2926);
+        border: none;
+
+        /* Screener/H10 */
+        font-family: Screener;
+        font-size: 0.875rem;
+        font-style: normal;
+        font-weight: 400;
+        cursor: pointer;
     }
 }
 </style>
