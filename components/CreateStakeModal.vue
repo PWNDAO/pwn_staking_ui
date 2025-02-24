@@ -32,9 +32,6 @@
         <span class="create-stake-modal__label">
           Lock Duration
         </span>
-        <div class="create-stake-modal__link">
-          Read more
-        </div>
         </div>
       <VueSlider
           style="width: 90%; margin: 0 auto;"
@@ -56,9 +53,15 @@
           <div class="create-stake-modal__dot"/>
         </template>
       </VueSlider>
+      <!-- Add potential voting power info -->
+      <div class="create-stake-modal__potential-power">
+        <GraphCumulativeVotingPower style="width: 700px;" :potential-stake="potentialStake" />
+      </div>
       <span class="create-stake-modal__disclaimer">Note: Stake duration must be between 1 and 5 years, or 10 years.</span>
       
       <span class="create-stake-modal__disclaimer">Note: The voting power will only be active at the start of the next epoch ({{timeTillNextEpoch}}).</span>
+
+
       <BaseCheckbox v-if="isLastValue(lockUpEpochs)"
                     v-model="isCheckboxTicked"
                     :label="checkboxLabel"/>
@@ -92,8 +95,10 @@ import {useQueryClient} from "@tanstack/vue-query";
 import BaseCheckbox from "~/components/BaseCheckbox.vue";
 import { ref, computed } from 'vue';
 import { parseUnits, formatUnits } from 'viem';
-import { useUserPwnBalance, useApproveToken, useCreateStake, useInitialEpochTimestamp } from '~/utils/hooks';
+import { useUserPwnBalance, useApproveToken, useCreateStake, useInitialEpochTimestamp, useManuallySetEpoch } from '~/utils/hooks';
 import { formatDecimalPoint, getAllowance } from '~/utils/utils';
+import { getFormattedVotingPower, getMultiplierForLockUpEpochs } from "~/utils/parsing";
+import GraphCumulativeVotingPower from "~/components/GraphCumulativeVotingPower.vue";
 
 const LOWER_STAKE_LOCK_UP_EPOCHS = 13 // 1 year
 const UPPER_STAKE_LOCK_UP_EPOCHS = 65 // 5 years
@@ -160,14 +165,27 @@ const availableEpochs = computed(() => {
 const checkboxLabel = computed(() => `I understand that this action will lock my tokens for ${MAX_STAKE_LOCK_UP_EPOCHS * DAYS_IN_EPOCH} days`)
 
 const isButtonDisabled = computed(() => {
-  return Boolean(isPending.value || !stakeAmount.value || !lockUpEpochs.value)
+  if (isPending.value || !stakeAmount.value || !lockUpEpochs.value) return true;
+  
+  // Check if stake amount exceeds balance
+  if (pwnTokenBalance.value && parseUnits(stakeAmount.value.toString(), 18) > pwnTokenBalance.value) {
+    return true;
+  }
+  
+  // Check if max duration selected but checkbox not ticked
+  if (isLastValue(lockUpEpochs.value) && !isCheckboxTicked.value) return true;
+  
+  return false;
 })
 
 const tooltipText = computed(() => {
-  if (!stakeAmount.value) return 'Please enter stake amount'
-  if (!lockUpEpochs.value) return 'Please select duration'
-  if (isLastValue(lockUpEpochs.value) && !isCheckboxTicked.value) return 'Please confirm the long lock duration'
-  return ''
+  if (!stakeAmount.value) return 'Please enter stake amount';
+  if (!lockUpEpochs.value) return 'Please select duration';
+  if (pwnTokenBalance.value && parseUnits(stakeAmount.value.toString(), 18) > pwnTokenBalance.value) {
+    return 'Insufficient PWN balance';
+  }
+  if (isLastValue(lockUpEpochs.value) && !isCheckboxTicked.value) return 'Please confirm the long lock duration';
+  return '';
 })
 
 const invalidateUserStakesQuery = () => {
@@ -189,17 +207,17 @@ const createStakeAction = async () => {
       PWN_TOKEN[getChainIdTypesafe()],
       VE_PWN_TOKEN[getChainIdTypesafe()]
     )
-    const requiredAmount = parseUnits(Number(stakeAmount.value).toString(), 18)
+    const requiredAmount = parseUnits(stakeAmount.value.toString(), 18)
     
     if (allowance < requiredAmount) {
       await approveToken({ 
-        amount: stakeAmount.value,
+        amount: stakeAmount.value.toString(),
         spender: VE_PWN_TOKEN[getChainIdTypesafe()]
       })
     }
     
     await createStake({ 
-      amount: stakeAmount.value,
+      amount: stakeAmount.value.toString(),
       lockUpEpochs: lockUpEpochs.value 
     })
   } catch (error) {
@@ -219,6 +237,28 @@ const isLastValue = (value: number) => {
   return value === availableEpochs.value[availableEpochs.value.length - 1]
 }
 
+// Add computed properties for potential voting power
+const potentialMultiplier = computed(() => {
+  if (!lockUpEpochs.value) return 0;
+  return getMultiplierForLockUpEpochs(lockUpEpochs.value);
+});
+
+const potentialVotingPower = computed(() => {
+  if (!stakeAmount.value || !lockUpEpochs.value) return '0';
+  return getFormattedVotingPower(stakeAmount.value, potentialMultiplier.value);
+});
+
+const potentialStake = computed(() => {
+  if (!stakeAmount.value || !lockUpEpochs.value) return undefined;
+  return {
+    amount: parseUnits(stakeAmount.value.toString() || '0', 18),
+    lockUpEpochs: lockUpEpochs.value,
+    initialEpoch: epoch.value ? Number(epoch.value) + 1 : undefined // Stake starts next epoch
+  };
+});
+
+const { epoch } = useManuallySetEpoch(chainId)
+
 defineExpose({
   openModal
 })
@@ -226,6 +266,13 @@ defineExpose({
 
 <style scoped>
 .create-stake-modal {
+  &--wide {
+    :deep(.base-modal__content) {
+      width: 800px;
+      max-width: 90vw;
+    }
+  }
+
   &__body {
     margin-bottom: 2rem;
   }
@@ -376,6 +423,37 @@ defineExpose({
     &:hover {
       background: var(--primary-color-2);
     }
+  }
+
+  &__potential-power {
+    margin-top: 2rem;
+    padding: 1rem;
+    background: var(--black-input);
+    border: 1px solid var(--grey);
+  }
+
+  &__potential-power-stats {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  &__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  &__label-stats {
+    color: var(--subtitle-color);
+    font-family: var(--font-family-screener);
+    font-size: 0.875rem;
+  }
+
+  &__value {
+    color: var(--text-color);
+    font-family: var(--font-family-supreme);
+    font-size: 1rem;
   }
 }
 </style> 

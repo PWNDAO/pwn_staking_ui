@@ -31,9 +31,21 @@ import {
   type Point
 } from 'chart.js'
 import { formatUnits } from 'viem';
-import { MAX_EPOCHS_IN_FUTURE } from '~/constants/contracts';
+import { MAX_EPOCHS_IN_FUTURE, SECONDS_IN_EPOCH } from '~/constants/contracts';
 import { useChainIdTypesafe } from '~/constants/chain';
 import 'chartjs-adapter-date-fns';
+import { getMultiplierForLockUpEpochs, getStartDateOfEpoch } from '~/utils/parsing';
+import { useManuallySetEpoch, useUserCumulativeVotingPowerSummary, useInitialEpochTimestamp } from '~/utils/hooks';
+
+interface PotentialStake {
+  amount: bigint;
+  lockUpEpochs: number;
+  initialEpoch?: number;
+}
+
+const props = defineProps<{
+  potentialStake?: PotentialStake;
+}>();
 
 const highlightCurrentEpochPlugin = {
     id: 'highlightCurrentEpoch',
@@ -119,19 +131,61 @@ const parsedDataForGraph = computed(() => {
         return undefined
     }
 
-    return {
-        datasets: [
-            {
-                data: userCumulativeVotingPower.value.map(votingPowerInEpoch => ({ 
-                    x: getStartDateOfEpoch(Number(initialEpochTimestamp.value), Number(votingPowerInEpoch.epoch)),
-                    y: Number(formatUnits(votingPowerInEpoch.power, 18)),
-                    epoch: votingPowerInEpoch.epoch.toString()
-                })),
-                pointRadius: 0,
-                pointHoverRadius: 5,
+    const datasets = [];
+
+    // Current voting power dataset
+    datasets.push({
+        data: userCumulativeVotingPower.value.map(votingPowerInEpoch => ({ 
+            x: getStartDateOfEpoch(Number(initialEpochTimestamp.value), Number(votingPowerInEpoch.epoch)),
+            y: Number(formatUnits(votingPowerInEpoch.power, 18)),
+            epoch: votingPowerInEpoch.epoch.toString()
+        })),
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        label: 'Current Voting Power',
+        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color'),
+        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color-darker'),
+    });
+
+    // Add potential voting power if provided
+    if (props.potentialStake && props.potentialStake.initialEpoch !== undefined) {
+        const potentialData = userCumulativeVotingPower.value.map(votingPowerInEpoch => {
+            const epochNumber = Number(votingPowerInEpoch.epoch);
+            const currentPower = Number(formatUnits(votingPowerInEpoch.power, 18));
+            
+            // Only add potential power for future epochs after stake starts
+            if (epochNumber >= props.potentialStake!.initialEpoch!) {
+                const remainingEpochs = props.potentialStake!.lockUpEpochs - (epochNumber - props.potentialStake!.initialEpoch!);
+                if (remainingEpochs > 0) {
+                    const multiplier = getMultiplierForLockUpEpochs(remainingEpochs);
+                    const potentialPower = Number(formatUnits(props.potentialStake!.amount, 18)) * multiplier;
+                    return {
+                        x: getStartDateOfEpoch(Number(initialEpochTimestamp.value), epochNumber),
+                        y: currentPower + potentialPower,
+                        epoch: String(epochNumber)
+                    };
+                }
             }
-        ]
+            
+            return {
+                x: getStartDateOfEpoch(Number(initialEpochTimestamp.value), epochNumber),
+                y: currentPower,
+                epoch: String(epochNumber)
+            };
+        });
+
+        datasets.push({
+            data: potentialData,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            label: 'Potential Voting Power',
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--positive'),
+            backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--positive-darker'),
+            borderDash: [5, 5],
+        });
     }
+
+    return { datasets };
 })
 
 const chartOptions: ChartOptions<'line'> = {
@@ -139,9 +193,6 @@ const chartOptions: ChartOptions<'line'> = {
   maintainAspectRatio: false,
   pointStyle: false,
   fill: true,
-  backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color-darker'),
-  borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color'),
-  borderWidth: 1,
   stepped: true,
   interaction: {
     mode: 'index',
@@ -220,6 +271,13 @@ const chartOptions: ChartOptions<'line'> = {
     },
     // @ts-expect-error custom plugin name, works alright
     highlightCurrentEpoch: highlightCurrentEpochPlugin,
+    legend: {
+      display: true,
+      position: 'top' as const,
+      labels: {
+        color: getComputedStyle(document.documentElement).getPropertyValue('--text-color'),
+      }
+    }
   }
 }
 
@@ -232,6 +290,17 @@ const timeTillNextEpoch = computed(() => {
 
     return getTimeTillNextEpochStringified(Number(initialEpochTimestamp.value))
 })
+
+const nth = (n: string) => {
+  const num = Number(n);
+  if (num > 3 && num < 21) return `${num}th`;
+  switch (num % 10) {
+    case 1: return `${num}st`;
+    case 2: return `${num}nd`;
+    case 3: return `${num}rd`;
+    default: return `${num}th`;
+  }
+};
 </script>
 
 <style scoped>
