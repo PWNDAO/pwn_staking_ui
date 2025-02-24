@@ -25,7 +25,13 @@
                       <span v-else>
                         <div class="homepage__pwn-balance-value-wrapper">
                         <span> {{ totalPwnTokensFormatted }} PWN</span>
-                        <button class="homepage__stake-button" @click="openStakeTokensModal">Stake Tokens</button>
+                        <button 
+                          v-if="pwnTokenBalance && pwnTokenBalance > 0n" 
+                          class="homepage__stake-button" 
+                          @click="openStakeTokensModal"
+                        >
+                          Stake Tokens
+                        </button>
                         </div>
                       </span>
                     </div>
