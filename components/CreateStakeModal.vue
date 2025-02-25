@@ -34,7 +34,7 @@
         </span>
         </div>
       <VueSlider
-          style="width: 90%; margin: 0 auto;"
+          style="width: 95%; margin: 0 auto;"
           v-model="lockUpEpochs"
           :data="availableEpochs"
           :tooltip="'always'"

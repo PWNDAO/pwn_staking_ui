@@ -3,15 +3,15 @@
     <div v-else-if="parsedDataForGraph" class="graph-cumulative-voting-power">
         <div class="graph-cumulative-voting-power__heading">
             <div class="graph-cumulative-voting-power__title-section">
-                <span>Cumulative Voting Power</span>
+                <span>Voting Power Over Time</span>
                 <div class="graph-cumulative-voting-power__legend" v-if="props.potentialStake">
                     <div class="graph-cumulative-voting-power__legend-item">
                         <div class="graph-cumulative-voting-power__legend-line"></div>
-                        <span>Existing voting power</span>
+                        <span>Current voting power</span>
                     </div>
                     <div class="graph-cumulative-voting-power__legend-item">
                         <div class="graph-cumulative-voting-power__legend-line graph-cumulative-voting-power__legend-line--dashed"></div>
-                        <span>Potential voting power</span>
+                        <span>New voting power</span>
                     </div>
                 </div>
             </div>
@@ -166,7 +166,7 @@ const parsedDataForGraph = computed(() => {
         })),
         pointRadius: 0,
         pointHoverRadius: 5,
-        label: 'Existing Voting Power',
+        label: 'Current Voting Power',
         borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color'),
         backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color-darker'),
         fill: true
