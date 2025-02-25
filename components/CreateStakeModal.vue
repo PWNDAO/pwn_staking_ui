@@ -55,7 +55,7 @@
       </VueSlider>
       <!-- Add potential voting power info -->
       <div class="create-stake-modal__potential-power">
-        <GraphCumulativeVotingPower style="width: 700px;" :potential-stake="potentialStake" />
+        <GraphCumulativeVotingPower style="width: 85vw;" :potential-stake="potentialStake" />
       </div>
       <span class="create-stake-modal__disclaimer">Note: Stake duration must be between 1 and 5 years, or 10 years.</span>
       
@@ -268,7 +268,7 @@ defineExpose({
 .create-stake-modal {
   &--wide {
     :deep(.base-modal__content) {
-      width: 800px;
+      width: 90vw;
       max-width: 90vw;
     }
   }
