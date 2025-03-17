@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/vue-query";
+import { useQuery, useMutation } from "@tanstack/vue-query";
 import {erc20Abi, parseAbiItem, type Address, parseEventLogs} from "viem";
 import { getLogs } from "viem/actions";
 import { getClient, readContract } from "@wagmi/vue/actions";
@@ -8,6 +8,8 @@ import { getChainIdTypesafe, type SupportedChain } from "~/constants/chain";
 import type { PowerInEpoch, StakeDetail, VestingDetail } from "~/types/contractResults";
 import { wagmiAdapter } from "~/wagmi";
 import { zeroAddress } from 'viem'
+import { sendTransaction } from '~/utils/useTransactions';
+import { parseUnits } from 'viem';
 
 
 export const useUserPwnBalance = (walletAddress: Ref<Address | undefined>, chainId: Ref<SupportedChain>) => {
@@ -250,4 +252,35 @@ export const useUserVestedTokens = (walletAddress: Ref<Address | undefined>, cha
             return activeVestings
         }
     })
+}
+
+export const useApproveToken = (chainId: Ref<SupportedChain>) => {
+  return useMutation({
+    mutationFn: async ({ amount, spender }: { amount: string, spender: Address }) => {
+      const formattedAmount = Number(amount).toString()
+      return await sendTransaction({
+        abi: erc20Abi,
+        address: PWN_TOKEN[chainId.value],
+        functionName: 'approve',
+        chainId: chainId.value,
+        args: [spender, parseUnits(formattedAmount, 18)]
+      })
+    }
+  })
+}
+
+export const useCreateStake = (chainId: Ref<SupportedChain>, onSuccess?: () => void) => {
+  return useMutation({
+    mutationFn: async ({ amount, lockUpEpochs }: { amount: string, lockUpEpochs: number }) => {
+      const formattedAmount = Number(amount).toString()
+      return await sendTransaction({
+        abi: VE_PWN_TOKEN_ABI,
+        address: VE_PWN_TOKEN[chainId.value],
+        functionName: 'createStake',
+        chainId: chainId.value,
+        args: [parseUnits(formattedAmount, 18), BigInt(lockUpEpochs)]
+      })
+    },
+    onSuccess
+  })
 }
