@@ -2,7 +2,19 @@
     <BaseSkeletor v-if="isFetchingUserCumulativeVotingPower" height="2"/>
     <div v-else-if="parsedDataForGraph" class="graph-cumulative-voting-power">
         <div class="graph-cumulative-voting-power__heading">
-            <span>Cumulative Voting Power</span>
+            <div class="graph-cumulative-voting-power__title-section">
+                <span>Voting Power Over Time</span>
+                <div class="graph-cumulative-voting-power__legend" v-if="props.potentialStake">
+                    <div class="graph-cumulative-voting-power__legend-item">
+                        <div class="graph-cumulative-voting-power__legend-line"></div>
+                        <span>Current voting power</span>
+                    </div>
+                    <div class="graph-cumulative-voting-power__legend-item">
+                        <div class="graph-cumulative-voting-power__legend-line graph-cumulative-voting-power__legend-line--dashed"></div>
+                        <span>New voting power</span>
+                    </div>
+                </div>
+            </div>
             <span v-if="timeTillNextEpoch !== undefined">Time Till Next Epoch: {{ timeTillNextEpoch }}</span>
         </div>
 
@@ -31,9 +43,21 @@ import {
   type Point
 } from 'chart.js'
 import { formatUnits } from 'viem';
-import { MAX_EPOCHS_IN_FUTURE } from '~/constants/contracts';
+import { MAX_EPOCHS_IN_FUTURE, SECONDS_IN_EPOCH } from '~/constants/contracts';
 import { useChainIdTypesafe } from '~/constants/chain';
 import 'chartjs-adapter-date-fns';
+import { getMultiplierForLockUpEpochs, getStartDateOfEpoch } from '~/utils/parsing';
+import { useManuallySetEpoch, useUserCumulativeVotingPowerSummary, useInitialEpochTimestamp } from '~/utils/hooks';
+
+interface PotentialStake {
+  amount: bigint;
+  lockUpEpochs: number;
+  initialEpoch?: number;
+}
+
+const props = defineProps<{
+  potentialStake?: PotentialStake;
+}>();
 
 const highlightCurrentEpochPlugin = {
     id: 'highlightCurrentEpoch',
@@ -115,23 +139,78 @@ const userCumulativeVotingPower = computed(() => userCumulativeVotingPowerQuery.
 const isFetchingUserCumulativeVotingPower = computed(() => userCumulativeVotingPowerQuery.isLoading.value)
 
 const parsedDataForGraph = computed(() => {
-    if (!userCumulativeVotingPower.value?.length || !initialEpochTimestamp.value) {
-        return undefined
+    if (!initialEpochTimestamp.value) {
+        return undefined;
     }
 
-    return {
-        datasets: [
-            {
-                data: userCumulativeVotingPower.value.map(votingPowerInEpoch => ({ 
-                    x: getStartDateOfEpoch(Number(initialEpochTimestamp.value), Number(votingPowerInEpoch.epoch)),
-                    y: Number(formatUnits(votingPowerInEpoch.power, 18)),
-                    epoch: votingPowerInEpoch.epoch.toString()
-                })),
-                pointRadius: 0,
-                pointHoverRadius: 5,
-            }
-        ]
+    const datasets = [];
+    const dataPoints = userCumulativeVotingPower.value || [];
+
+    // If no data points, create default data points for current epoch range
+    if (dataPoints.length === 0 && epoch.value !== undefined) {
+        let startEpoch = Math.max(1, epoch.value - NUMBER_OF_PAST_EPOCHS_TO_DISPLAY);
+        for (let i = 0; i < MAX_EPOCHS_IN_FUTURE + NUMBER_OF_PAST_EPOCHS_TO_DISPLAY; i++) {
+            dataPoints.push({
+                epoch: BigInt(startEpoch + i),
+                power: 0n
+            });
+        }
     }
+
+    // Current voting power dataset
+    datasets.push({
+        data: dataPoints.map(votingPowerInEpoch => ({ 
+            x: getStartDateOfEpoch(Number(initialEpochTimestamp.value), Number(votingPowerInEpoch.epoch)),
+            y: Number(formatUnits(votingPowerInEpoch.power, 18)),
+            epoch: votingPowerInEpoch.epoch.toString()
+        })),
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        label: 'Current Voting Power',
+        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color'),
+        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color-darker'),
+        fill: true
+    });
+
+    // Add potential voting power if provided
+    if (props.potentialStake && props.potentialStake.initialEpoch !== undefined) {
+        const potentialData = dataPoints.map(votingPowerInEpoch => {
+            const epochNumber = Number(votingPowerInEpoch.epoch);
+            const existingPower = Number(formatUnits(votingPowerInEpoch.power, 18));
+            
+            // Only add potential power for future epochs after stake starts
+            if (epochNumber >= props.potentialStake!.initialEpoch!) {
+                const remainingEpochs = props.potentialStake!.lockUpEpochs - (epochNumber - props.potentialStake!.initialEpoch!);
+                if (remainingEpochs > 0) {
+                    const multiplier = getMultiplierForLockUpEpochs(remainingEpochs);
+                    const newPotentialPower = Number(formatUnits(props.potentialStake!.amount, 18)) * multiplier;
+                    return {
+                        x: getStartDateOfEpoch(Number(initialEpochTimestamp.value), epochNumber),
+                        y: existingPower + newPotentialPower,
+                        epoch: String(epochNumber)
+                    };
+                }
+            }
+            
+            return {
+                x: getStartDateOfEpoch(Number(initialEpochTimestamp.value), epochNumber),
+                y: existingPower,
+                epoch: String(epochNumber)
+            };
+        });
+
+        datasets.push({
+            data: potentialData,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            label: 'New Voting Power',
+            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color'),
+            borderDash: [5, 5],
+            fill: true
+        });
+    }
+
+    return { datasets };
 })
 
 const chartOptions: ChartOptions<'line'> = {
@@ -139,9 +218,6 @@ const chartOptions: ChartOptions<'line'> = {
   maintainAspectRatio: false,
   pointStyle: false,
   fill: true,
-  backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color-darker'),
-  borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color'),
-  borderWidth: 1,
   stepped: true,
   interaction: {
     mode: 'index',
@@ -155,7 +231,9 @@ const chartOptions: ChartOptions<'line'> = {
         },
         grid: {
             tickColor: '#313131',
-        }
+        },
+        min: 0,
+        beginAtZero: true
     },
     x: {
         type: 'time',
@@ -209,7 +287,8 @@ const chartOptions: ChartOptions<'line'> = {
     tooltip: {
         callbacks: {
             label(tooltipItems) {
-                return ` ${tooltipItems.formattedValue} Voting Power`
+                const label = tooltipItems.dataset.label || '';
+                return ` ${tooltipItems.formattedValue} ${label}`;
             },
             title(tooltipItems) {
                 const dataPoint = tooltipItems[0].raw as { epoch: string };
@@ -220,6 +299,16 @@ const chartOptions: ChartOptions<'line'> = {
     },
     // @ts-expect-error custom plugin name, works alright
     highlightCurrentEpoch: highlightCurrentEpochPlugin,
+    legend: {
+      display: true,
+      position: 'top' as const,
+      align: 'start' as const,
+      labels: {
+        color: getComputedStyle(document.documentElement).getPropertyValue('--text-color'),
+        usePointStyle: false,
+        padding: 20
+      }
+    }
   }
 }
 
@@ -232,6 +321,17 @@ const timeTillNextEpoch = computed(() => {
 
     return getTimeTillNextEpochStringified(Number(initialEpochTimestamp.value))
 })
+
+const nth = (n: string) => {
+  const num = Number(n);
+  if (num > 3 && num < 21) return `${num}th`;
+  switch (num % 10) {
+    case 1: return `${num}st`;
+    case 2: return `${num}nd`;
+    case 3: return `${num}rd`;
+    default: return `${num}th`;
+  }
+};
 </script>
 
 <style scoped>
@@ -240,7 +340,6 @@ const timeTillNextEpoch = computed(() => {
     background-color: var(--background-color);
     border: 1px solid var(--border-color);
     overflow: auto;
-
     max-height: 500px;
 
     &__heading {
@@ -249,9 +348,39 @@ const timeTillNextEpoch = computed(() => {
         color: var(--subtitle-color);
         margin-bottom: 1rem;
         font-size: 0.875rem;
+        font-family: var(--font-family-screener);
 
         @media (max-width: 800px) {
             width: 700px;
+        }
+    }
+
+    &__title-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    &__legend {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.75rem;
+        color: var(--subtitle-color);
+    }
+
+    &__legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    &__legend-line {
+        width: 20px;
+        height: 0;
+        border-top: 2px solid var(--primary-color);
+
+        &--dashed {
+            border-top: 2px dashed var(--primary-color);
         }
     }
 
