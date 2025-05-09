@@ -15,13 +15,16 @@ const CHAIN_SETTINGS = {
   1: {
     chain: mainnet,
     transports: fallback([
-      ...(import.meta.env.VITE_DRPC_ETHEREUM_NODE_TOKEN ? [
-        http(`https://lb.drpc.org/ogrpc?network=${mainnet.name.toLocaleLowerCase()}&dkey=${import.meta.env.VITE_DRPC_ETHEREUM_NODE_TOKEN}`, {
-          batch: true,
-        })
-      ] : []),
-      http('https://eth-mainnet.alchemyapi.io/v2/', {
-        batch: true,
+      // note: commenting this out now, because dRPC has a limit of 10000 block range when 
+      //  using the eth_getLogs method, which would mean we would need a lot of these requests
+      // ...(import.meta.env.VITE_DRPC_ETHEREUM_NODE_TOKEN ? [
+      //   http(`https://lb.drpc.org/ogrpc?network=${mainnet.name.toLocaleLowerCase()}&dkey=${import.meta.env.VITE_DRPC_ETHEREUM_NODE_TOKEN}`, {
+      //     batch: true,
+      //   })
+      // ] : []),
+      http('https://eth-mainnet.g.alchemy.com/v2/', {
+        // note: i've disabled the batch: true, as it was breaking the eth_getLogs calls
+        // batch: true,
         fetchOptions: {
           headers: {
             Authorization: `Bearer ${import.meta.env.VITE_PUBLIC_ETHEREUM_NODE_TOKEN}`,
@@ -33,13 +36,16 @@ const CHAIN_SETTINGS = {
   11155111: {
     chain: sepolia,
     transports: fallback([
-      ...(import.meta.env.VITE_DRPC_SEPOLIA_NODE_TOKEN ? [
-        http(`https://lb.drpc.org/ogrpc?network=${sepolia.name.toLocaleLowerCase()}&dkey=${import.meta.env.VITE_DRPC_SEPOLIA_NODE_TOKEN}`, {
-          batch: true,
-        })
-      ] : []),
+      // note: commenting this out now, because dRPC has a limit of 10000 block range when 
+      //  using the eth_getLogs method, which would mean we would need a lot of these requests
+      // ...(import.meta.env.VITE_DRPC_SEPOLIA_NODE_TOKEN ? [
+      //   http(`https://lb.drpc.org/ogrpc?network=${sepolia.name.toLocaleLowerCase()}&dkey=${import.meta.env.VITE_DRPC_SEPOLIA_NODE_TOKEN}`, {
+      //     batch: true,
+      //   })
+      // ] : []),
       http('https://eth-sepolia.g.alchemy.com/v2/', {
-        batch: true,
+        // note: i've disabled the batch: true, as it was breaking the eth_getLogs calls
+        // batch: true,
         fetchOptions: {
           headers: {
             Authorization: `Bearer ${import.meta.env.VITE_PUBLIC_SEPOLIA_NODE_TOKEN}`,
