@@ -1,5 +1,8 @@
 import type {Address} from "abitype";
 import {isAddress, isAddressEqual} from "viem";
+import { readContract } from '@wagmi/vue/actions';
+import { erc20Abi } from 'viem';
+import { wagmiAdapter } from '~/wagmi';
 
 export const compareAddresses = (a: Address | undefined, b: Address | undefined): boolean => {
     if (a === undefined && b === undefined) {
@@ -89,4 +92,18 @@ export const formatDecimalPoint = (amount: number | string, numbersBehindDecimal
     }
 
     return result
+}
+
+export const getAllowance = async (
+  ownerAddress: Address | undefined,
+  tokenAddress: Address,
+  spenderAddress: Address,
+): Promise<bigint> => {
+  if (!ownerAddress) return 0n;
+  return await readContract(wagmiAdapter.wagmiConfig, {
+    abi: erc20Abi,
+    address: tokenAddress,
+    functionName: 'allowance',
+    args: [ownerAddress, spenderAddress]
+  });
 }
