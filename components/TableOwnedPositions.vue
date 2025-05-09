@@ -99,7 +99,7 @@
 
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core';
-import { useAccount, useWriteContract } from '@wagmi/vue';
+import { useAccount } from '@wagmi/vue';
 import { formatUnits, parseUnits } from 'viem';
 import { SECONDS_IN_EPOCH, MIN_STAKE_DURATION_IN_EPOCH } from '~/constants/contracts';
 import { formatSeconds } from '@/utils/date';
@@ -362,15 +362,20 @@ const handleSortingIconClick = (newSortingProp: SortingProp) => {
 
 const DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP = MIN_STAKE_DURATION_IN_EPOCH
 
-const { writeContractAsync: _writeContractUpgradeToStake, isPending: isUpgradingToStake } = useWriteContract()
+const isUpgradingToStake = ref(false)
 const upgradeToStake = async (unlockEpoch: number | bigint, stakeLockUpEpochs: number | bigint) => {
-    return await _writeContractUpgradeToStake({
-        abi: PWN_VESTING_MANAGER_ABI,
-        address: PWN_VESTING_MANAGER[1],
-        functionName: 'upgradeToStake',
-        chainId: 1,
-        args: [BigInt(unlockEpoch), BigInt(stakeLockUpEpochs)]
-    })
+    isUpgradingToStake.value = true
+    try {
+        return await sendTransaction({
+            abi: PWN_VESTING_MANAGER_ABI,
+            address: PWN_VESTING_MANAGER[1],
+            functionName: 'upgradeToStake',
+            chainId: 1,
+            args: [BigInt(unlockEpoch), BigInt(stakeLockUpEpochs)]
+        })
+    } finally {
+        isUpgradingToStake.value = false
+    }
 }
 
 const upgradeToStakeTooltipText = computed(() => {
