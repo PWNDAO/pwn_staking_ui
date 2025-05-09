@@ -164,6 +164,7 @@ export const VE_PWN_TOKEN_ABI = [
         "stateMutability": "nonpayable",
         "type": "function"
     },
+    { "inputs": [{ "internalType": "uint256", "name": "stakeId", "type": "uint256" }, { "internalType": "address", "name": "stakeBeneficiary", "type": "address" }], "name": "withdrawStake", "outputs": [], "stateMutability": "nonpayable", "type": "function" }
 ] as const
 
 export const EPOCH_CLOCK_ABI = [
