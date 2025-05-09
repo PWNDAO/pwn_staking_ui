@@ -164,6 +164,8 @@ export const VE_PWN_TOKEN_ABI = [
         "stateMutability": "nonpayable",
         "type": "function"
     },
+    { "inputs": [{ "internalType": "uint256", "name": "stakeId", "type": "uint256" }, { "internalType": "address", "name": "stakeBeneficiary", "type": "address" }], "name": "withdrawStake", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+    { "inputs": [], "stateMutability": "nonpayable", "type": "constructor" }, { "inputs": [], "name": "ApproveDisabled", "type": "error" }, { "inputs": [], "name": "DelegateBySigDisabled", "type": "error" }, { "inputs": [], "name": "DelegateDisabled", "type": "error" }, { "inputs": [], "name": "EpochStillRunning", "type": "error" }, { "inputs": [], "name": "InvalidAmount", "type": "error" }, { "inputs": [], "name": "InvalidLockUpPeriod", "type": "error" }, { "inputs": [], "name": "LockUpPeriodMismatch", "type": "error" }, { "inputs": [], "name": "NotStakeOwner", "type": "error" }, { "inputs": [], "name": "NothingToIncrease", "type": "error" }, { "inputs": [{ "internalType": "uint256", "name": "lastCalculatedEpoch", "type": "uint256" }], "name": "PowerAlreadyCalculated", "type": "error" }, { "inputs": [], "name": "SameBeneficiary", "type": "error" }, { "inputs": [{ "internalType": "uint256", "name": "stakeId", "type": "uint256" }], "name": "StakeNotFound", "type": "error" }, { "inputs": [], "name": "TransferDisabled", "type": "error" }, { "inputs": [], "name": "TransferFromDisabled", "type": "error" }, { "inputs": [], "name": "WithrawalBeforeLockUpEnd", "type": "error" }
 ] as const
 
 export const EPOCH_CLOCK_ABI = [

@@ -1,6 +1,6 @@
 import to from '@/utils/await-to-js'
 import type { Abi, Address, ContractFunctionArgs, ContractFunctionName, TransactionReceipt } from 'viem'
-import { getAccount, getBlockNumber, getPublicClient, getTransaction, getTransactionReceipt, switchChain, waitForTransactionReceipt, watchContractEvent, writeContract } from '@wagmi/vue/actions'
+import { getAccount, getBlockNumber, getPublicClient, getTransaction, getTransactionReceipt, simulateContract, switchChain, waitForTransactionReceipt, watchContractEvent, writeContract } from '@wagmi/vue/actions'
 import type { WriteContractVariables } from '@wagmi/vue/query'
 import type { AnyFunction, IntervalId } from '@/types/customTypes'
 // import type { ToastStep } from '@/modules/common/notifications/useToastsStore'
@@ -65,6 +65,9 @@ export async function sendTransaction<
     }
 
     const { address: userAddress } = getAccount(wagmiAdapter.wagmiConfig)
+
+    // @ts-expect-error probably some type mismatch between writeContract and simulateContract
+    await simulateContract(wagmiAdapter.wagmiConfig, transaction)
 
 
     // txHash:
