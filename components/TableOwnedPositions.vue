@@ -73,19 +73,24 @@
                     </template>
                 </td>
                 <td class="table-positions__td">
-                  <BaseTooltip  v-if="stake.isVesting" :tooltip-text="upgradeToStakeTooltipText">
-                    <template #trigger>
-                      <button :disabled="isUpgradingToStake" class="table-positions__upgrade-btn" @click="upgradeToStake(stake.unlockEpoch, DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP)">
-                        {{ isUpgradingToStake ? 'Upgrading...' : 'Upgrade to stake' }}
-                      </button>
-                    </template>
-                  </BaseTooltip>
-                  <span
-                      v-else
-                      class="link link--no-underline link--primary"
-                      @click="openModal(stake.id, stake.epochsRemaining, stake.amount)">
-                    Increase Duration
-                  </span>
+                    <div class="table-positions__actions-wrapper">
+                        <BaseTooltip  v-if="stake.isVesting && stake.unlocksIn > 0" :tooltip-text="upgradeToStakeTooltipText">
+                            <template #trigger>
+                            <button :disabled="isUpgradingToStake" class="table-positions__upgrade-btn" @click="upgradeToStake(stake.unlockEpoch, DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP)">
+                                {{ isUpgradingToStake ? 'Upgrading...' : 'Upgrade to stake' }}
+                            </button>
+                            </template>
+                        </BaseTooltip>
+                        <span
+                            v-if="!stake.isVesting"
+                            class="link link--no-underline link--primary"
+                            @click="openModal(stake.id, stake.epochsRemaining, stake.amount)">
+                            Increase Duration
+                        </span>
+                        <button v-if="stake.unlocksIn === 0" class="table-positions__upgrade-btn" @click="claim(stake)" :disabled="isClaiming">
+                            Claim
+                        </button>
+                  </div>
                 </td>
             </tr>
         </tbody>
@@ -94,16 +99,15 @@
 
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core';
-import { useAccount, useWriteContract } from '@wagmi/vue';
+import { useAccount } from '@wagmi/vue';
 import { formatUnits, parseUnits } from 'viem';
 import { SECONDS_IN_EPOCH, MIN_STAKE_DURATION_IN_EPOCH } from '~/constants/contracts';
 import { formatSeconds } from '@/utils/date';
 import { TooltipBorderColor } from './BaseTooltip.vue';
 import { useChainIdTypesafe } from '~/constants/chain';
-import {useUserVestedTokens, useCurrentEpoch, useAllBeneficiaries} from '~/utils/hooks';
-import { wagmiAdapter } from '~/wagmi';
-import { PWN_VESTING_MANAGER } from '~/constants/addresses';
-import { PWN_VESTING_MANAGER_ABI } from '~/constants/abis';
+import {useUserVestedTokens, useAllBeneficiaries} from '~/utils/hooks';
+import { PWN_VESTING_MANAGER, VE_PWN_TOKEN } from '~/constants/addresses';
+import { PWN_VESTING_MANAGER_ABI, VE_PWN_TOKEN_ABI } from '~/constants/abis';
 import type {Address} from "abitype";
 import {shortenAddress} from "../utils/web3";
 import {getFormattedVotingPower} from "~/utils/parsing";
@@ -358,15 +362,20 @@ const handleSortingIconClick = (newSortingProp: SortingProp) => {
 
 const DEFAULT_VESTING_UPGRADE_EPOCH_LOCKUP = MIN_STAKE_DURATION_IN_EPOCH
 
-const { writeContractAsync: _writeContractUpgradeToStake, isPending: isUpgradingToStake } = useWriteContract()
+const isUpgradingToStake = ref(false)
 const upgradeToStake = async (unlockEpoch: number | bigint, stakeLockUpEpochs: number | bigint) => {
-    return await _writeContractUpgradeToStake({
-        abi: PWN_VESTING_MANAGER_ABI,
-        address: PWN_VESTING_MANAGER[1],
-        functionName: 'upgradeToStake',
-        chainId: 1,
-        args: [BigInt(unlockEpoch), BigInt(stakeLockUpEpochs)]
-    })
+    isUpgradingToStake.value = true
+    try {
+        return await sendTransaction({
+            abi: PWN_VESTING_MANAGER_ABI,
+            address: PWN_VESTING_MANAGER[1],
+            functionName: 'upgradeToStake',
+            chainId: 1,
+            args: [BigInt(unlockEpoch), BigInt(stakeLockUpEpochs)]
+        })
+    } finally {
+        isUpgradingToStake.value = false
+    }
 }
 
 const upgradeToStakeTooltipText = computed(() => {
@@ -387,6 +396,32 @@ const upgradeToStakeTooltipText = computed(() => {
     For a longer stake lock-up period, please contact us on Discord for assistance.
     `
 })
+
+const isClaiming = ref(false)
+const claim = async (stake: TableRowData) => {
+    try {
+        isClaiming.value = true
+        if (stake.isVesting) {
+            return await sendTransaction({
+            abi: PWN_VESTING_MANAGER_ABI,
+            address: PWN_VESTING_MANAGER[1],
+            functionName: 'claimVesting',
+            chainId: 1,
+            args: [BigInt(stake.unlockEpoch)]
+        })
+        } else {
+            return await sendTransaction({
+                abi: VE_PWN_TOKEN_ABI,
+                address: VE_PWN_TOKEN[chainId.value],
+                functionName: 'withdrawStake',
+                chainId: chainId.value,
+                args: [BigInt(stake.id), stake.votingDelegate || address.value!]
+            })
+        }
+    } finally {
+        isClaiming.value = false
+    }
+}
 </script>
 
 <style scoped>
@@ -499,6 +534,12 @@ const upgradeToStakeTooltipText = computed(() => {
                 cursor: not-allowed;
             }
         }
+    }
+
+    &__actions-wrapper {
+        display: flex;
+        align-items: center;
+        column-gap: 1rem;
     }
 }
 </style>
