@@ -1,92 +1,92 @@
 <template>
-  <div
-      class="checkbox"
-      @click="handleClick">
+  <div class="checkbox" @click="handleClick">
     <!-- <input> is invisible, left for accessibility purposes -->
     <input
-        :id="inputName"
-        :value="modelValue"
-        class="checkbox__hidden-input"
-        type="hidden">
+      :id="inputName"
+      :value="modelValue"
+      class="checkbox__hidden-input"
+      type="hidden"
+    />
     <svg
-        :class="svgClasses"
-        width="12"
-        height="9"
-        viewBox="0 0 19 16"
-        fill="none">
+      :class="svgClasses"
+      width="12"
+      height="9"
+      viewBox="0 0 19 16"
+      fill="none"
+    >
       <path
-          d="M18.2572 1.31421L5.91434 13.6571L0.771484 8.51421"
-          :stroke="primaryColor"
-          stroke-width="2"/>
+        d="M18.2572 1.31421L5.91434 13.6571L0.771484 8.51421"
+        :stroke="primaryColor"
+        stroke-width="2"
+      />
     </svg>
-    <label
-        :for="inputName"
-        :class="labelClasses">
+    <label :for="inputName" :class="labelClasses">
       {{ label }}
     </label>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, toRefs } from 'vue'
-import useUuid from '@/utils/useUuid'
-import { useCssVar } from '@vueuse/core'
+import { computed, toRefs } from "vue";
+import { useCssVar } from "@vueuse/core";
+import useUuid from "@/utils/useUuid";
 
 enum CheckboxVariant {
-  Default = 'default',
-  SmallGray = 'small-gray',
-  White = 'white'
+  Default = "default",
+  SmallGray = "small-gray",
+  White = "white",
 }
 
 interface Props {
-  modelValue: boolean
-  inputName?: string
-  label?: string
-  isCheckboxAfterLabel?: boolean
-  variant?: CheckboxVariant
-  isDisabled?: boolean
-  wrapLabelText?: boolean
-  handleClick?: (e: MouseEvent) => void
+  modelValue: boolean;
+  inputName?: string;
+  label?: string;
+  isCheckboxAfterLabel?: boolean;
+  variant?: CheckboxVariant;
+  isDisabled?: boolean;
+  wrapLabelText?: boolean;
+  handleClick?: (e: MouseEvent) => void;
 }
 const props = withDefaults(defineProps<Props>(), {
   inputName: useUuid().getUuid().toString(),
-  label: '',
+  label: "",
   variant: CheckboxVariant.Default,
   isDisabled: false,
   wrapLabelText: true,
-})
+});
 
-const { label, isCheckboxAfterLabel, modelValue, variant, isDisabled } = toRefs(props)
+const { label, isCheckboxAfterLabel, modelValue, variant, isDisabled } =
+  toRefs(props);
 
-const emit = defineEmits<{(e: 'update:modelValue', value: boolean): void}>()
+const emit = defineEmits<{ (e: "update:modelValue", value: boolean): void }>();
 
 const handleClick = (event: MouseEvent) => {
-  if (isDisabled.value) return
+  if (isDisabled.value) return;
   if (props.handleClick) {
-    props.handleClick(event)
+    props.handleClick(event);
   } else {
-    emit('update:modelValue', !modelValue.value)
+    emit("update:modelValue", !modelValue.value);
   }
-}
+};
 
 const svgClasses = computed(() => [
-  'checkbox__checkmark',
-  { 'checkbox__checkmark--right': isCheckboxAfterLabel.value },
-  { 'checkbox__checkmark--left': !isCheckboxAfterLabel.value },
-  { 'checkbox__checkmark--checked': modelValue.value },
+  "checkbox__checkmark",
+  { "checkbox__checkmark--right": isCheckboxAfterLabel.value },
+  { "checkbox__checkmark--left": !isCheckboxAfterLabel.value },
+  { "checkbox__checkmark--checked": modelValue.value },
   `checkbox__checkmark--${variant.value}`,
-])
+]);
 const labelClasses = computed(() => [
-  'checkbox__label',
+  "checkbox__label",
   {
-    'checkbox__label--after': isCheckboxAfterLabel.value,
-    'checkbox__label--before': !isCheckboxAfterLabel.value,
-    'checkbox__label--nowrap': !props.wrapLabelText,
+    "checkbox__label--after": isCheckboxAfterLabel.value,
+    "checkbox__label--before": !isCheckboxAfterLabel.value,
+    "checkbox__label--nowrap": !props.wrapLabelText,
   },
   `checkbox__label--before-${variant.value}`,
-])
+]);
 
-const primaryColor = useCssVar('--primary-color')
+const primaryColor = useCssVar("--primary-color");
 </script>
 
 <style scoped>

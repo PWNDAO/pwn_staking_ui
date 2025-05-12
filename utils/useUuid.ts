@@ -1,11 +1,11 @@
-import { ref } from 'vue'
+import { ref } from "vue";
 
-const uuid = ref(1)
+const uuid = ref(1);
 
-export default function useUuid () {
-    const getUuid = () => uuid.value++
+export default function useUuid() {
+  const getUuid = () => uuid.value++;
 
-    return {
-        getUuid,
-    }
+  return {
+    getUuid,
+  };
 }
