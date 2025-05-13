@@ -350,13 +350,12 @@ export const useApproveToken = (chainId: Ref<SupportedChain>) => {
       amount: string;
       spender: Address;
     }) => {
-      const formattedAmount = Number(amount).toString();
       return await sendTransaction({
         abi: erc20Abi,
         address: PWN_TOKEN[chainId.value],
         functionName: "approve",
         chainId: chainId.value,
-        args: [spender, parseUnits(formattedAmount, 18)],
+        args: [spender, parseUnits(amount, 18)],
       });
     },
   });
@@ -374,13 +373,12 @@ export const useCreateStake = (
       amount: string;
       lockUpEpochs: number;
     }) => {
-      const formattedAmount = Number(amount).toString();
       return await sendTransaction({
         abi: VE_PWN_TOKEN_ABI,
         address: VE_PWN_TOKEN[chainId.value],
         functionName: "createStake",
         chainId: chainId.value,
-        args: [parseUnits(formattedAmount, 18), BigInt(lockUpEpochs)],
+        args: [parseUnits(amount, 18), BigInt(lockUpEpochs)],
       });
     },
     onSuccess,

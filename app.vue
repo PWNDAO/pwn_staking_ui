@@ -31,5 +31,3 @@ useSeoMeta({
 
 // TODO also define useSchemaOrg?
 </script>
-
-<style></style>

@@ -274,7 +274,7 @@ watch(isOpenLocal, () => {
     }
   }
 
-  @media only screen and (--small-viewport) {
+  @media only screen and (max-width: 1258px) {
     &__content {
       &--size {
         &-medium {
@@ -324,11 +324,5 @@ watch(isOpenLocal, () => {
   &-leave-from {
     opacity: 1;
   }
-}
-</style>
-
-<style>
-.nouns-subdomain .modal__content {
-  background-blend-mode: exclusion;
 }
 </style>

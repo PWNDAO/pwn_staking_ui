@@ -5,105 +5,103 @@
     :heading-align="'left'"
   >
     <template #body>
-      <div class="create-stake-modal__inputs-container">
-        <div>
-          <div class="create-stake-modal__label-container">
-            <span class="create-stake-modal__label"> Choose Stake Amount </span>
-            <div class="create-stake-modal__balance">
-              ({{ pwnTokenBalanceFormatted }} PWN)
+      <div class="create-stake-modal__body">
+        <div class="create-stake-modal__inputs-container">
+          <div>
+            <div class="create-stake-modal__label-container">
+              <span class="create-stake-modal__label">
+                Choose Stake Amount
+              </span>
+              <div class="create-stake-modal__balance">
+                ({{ pwnTokenBalanceFormatted }} PWN)
+              </div>
+            </div>
+            <div class="create-stake-modal__amount-input">
+              <input
+                v-model="stakeAmount"
+                type="number"
+                placeholder="Enter PWN amount"
+                class="create-stake-modal__input"
+              />
+              <button
+                class="create-stake-modal__max-button"
+                @click="setMaxAmount"
+              >
+                Max
+              </button>
             </div>
           </div>
-          <div class="create-stake-modal__amount-input">
-            <input
-              v-model="stakeAmount"
-              type="number"
-              placeholder="Enter PWN amount"
-              class="create-stake-modal__input"
-            />
-            <button
-              class="create-stake-modal__max-button"
-              @click="setMaxAmount"
+          <div class="create-stake-modal__lock-duration-container">
+            <div class="create-stake-modal__label-container--slider">
+              <span class="create-stake-modal__label"> Lock Duration </span>
+            </div>
+            <VueSlider
+              ref="sliderRef"
+              v-model="lockUpEpochs"
+              class="create-stake-modal__slider"
+              :adsorb="true"
+              :min="13"
+              :max="130"
+              :tooltip="'always'"
+              :process-style="{
+                backgroundColor: 'var(--primary-color)',
+              }"
+              :marks="marks"
+              :lazy="true"
+              @click.stop
             >
-              Max
-            </button>
+              <template #tooltip="{ value }">
+                <div :class="['create-stake-modal__tooltip-text']">
+                  {{ value * DAYS_IN_EPOCH }} days ({{
+                    displayShortDate(
+                      new Date(
+                        Date.now() +
+                          (value * SECONDS_IN_EPOCH + secondsTillNextEpoch!) *
+                            1000,
+                      ),
+                    )
+                  }})
+                </div>
+              </template>
+              <template #dot>
+                <div class="create-stake-modal__dot" />
+              </template>
+            </VueSlider>
           </div>
         </div>
-        <div>
-          <div class="create-stake-modal__label-container--slider">
-            <span class="create-stake-modal__label"> Lock Duration </span>
-          </div>
-          <VueSlider
-            v-model="lockUpEpochs"
-            style="
-              width: 80%;
-              cursor: pointer;
-              margin-top: 1.6875rem;
-              margin-left: 1.5rem;
-            "
-            :data="availableEpochs"
-            :tooltip="'always'"
-            :process-style="{
-              backgroundColor: 'var(--primary-color)',
-            }"
-            @click.stop
-          >
-            <template #tooltip="{ value }">
-              <div
-                :class="[
-                  'create-stake-modal__tooltip-text',
-                  {
-                    'create-stake-modal__tooltip-text--last-value':
-                      isLastValue(value),
-                  },
-                ]"
-              >
-                {{ value * DAYS_IN_EPOCH }} days
-              </div>
-            </template>
-            <template #dot>
-              <div class="create-stake-modal__dot" />
-            </template>
-          </VueSlider>
+
+        <!-- Add potential voting power info -->
+        <div class="create-stake-modal__potential-power">
+          <GraphCumulativeVotingPower :potential-stake="potentialStake" />
         </div>
-      </div>
-      <span class="create-stake-modal__disclaimer"
-        >Note: Stake duration must be between 1 and 5 years, or 10 years.</span
-      >
 
-      <!-- Add potential voting power info -->
-      <div class="create-stake-modal__potential-power">
-        <GraphCumulativeVotingPower
-          style="width: 60vw"
-          :potential-stake="potentialStake"
-        />
-      </div>
-
-      <span class="create-stake-modal__disclaimer"
-        >Note: The voting power will only be active at the start of the next
-        epoch ({{ timeTillNextEpoch }}).</span
-      >
-
-      <BaseCheckbox
-        v-if="isLastValue(lockUpEpochs)"
-        v-model="isCheckboxTicked"
-        :label="checkboxLabel"
-      />
-      <div class="create-stake-modal__submit">
-        <BaseTooltip
-          style="width: 100%"
-          :has-tooltip="isButtonDisabled && !isPending"
-          :tooltip-text="tooltipText"
+        <span class="create-stake-modal__disclaimer"
+          >Note: The voting power will only be active at the start of the next
+          epoch ({{ timeTillNextEpoch }}).</span
         >
-          <template #trigger>
-            <button
-              class="create-stake-modal__submit-button"
-              :disabled="isButtonDisabled"
-              @click="createStakeAction"
-            >
-              {{ buttonText }}
-            </button>
-          </template>
-        </BaseTooltip>
+
+        <BaseCheckbox
+          v-if="isLastValue(lockUpEpochs)"
+          v-model="isCheckboxTicked"
+          :label="checkboxLabel"
+        />
+        <div class="create-stake-modal__submit">
+          <BaseTooltip
+            style="width: 100%"
+            :has-tooltip="isButtonDisabled && !isPending"
+            :tooltip-text="tooltipText"
+          >
+            <template #trigger>
+              <button
+                class="create-stake-modal__submit-button"
+                :disabled="isButtonDisabled"
+                @click="createStakeAction"
+              >
+                {{ buttonText }}
+              </button>
+            </template>
+          </BaseTooltip>
+        </div>
       </div>
     </template>
   </BaseModal>
@@ -113,12 +111,12 @@
 import { useAccount } from "@wagmi/vue";
 import VueSlider from "vue-3-slider-component";
 import { useQueryClient } from "@tanstack/vue-query";
-import { ref, computed } from "vue";
+import { ref, computed, useTemplateRef, watch } from "vue";
 import { parseUnits, formatUnits } from "viem";
 import { VE_PWN_TOKEN, PWN_TOKEN } from "~/constants/addresses";
 import { getChainIdTypesafe, useChainIdTypesafe } from "~/constants/chain";
-import { formatSeconds } from "~/utils/date";
-import { DAYS_IN_EPOCH } from "~/constants/contracts";
+import { formatSeconds, displayShortDate } from "~/utils/date";
+import { SECONDS_IN_EPOCH, DAYS_IN_EPOCH } from "~/constants/contracts";
 import BaseCheckbox from "~/components/BaseCheckbox.vue";
 import {
   useUserPwnBalance,
@@ -131,12 +129,28 @@ import { formatDecimalPoint, getAllowance } from "~/utils/utils";
 import GraphCumulativeVotingPower from "~/components/GraphCumulativeVotingPower.vue";
 
 const LOWER_STAKE_LOCK_UP_EPOCHS = 13; // 1 year
-const UPPER_STAKE_LOCK_UP_EPOCHS = 65; // 5 years
 const MAX_STAKE_LOCK_UP_EPOCHS = 130; // 10 years
 
 const isOpen = ref(false);
 const stakeAmount = ref("");
 const lockUpEpochs = ref(LOWER_STAKE_LOCK_UP_EPOCHS);
+
+const sliderRef = useTemplateRef<VueSlider>("sliderRef");
+
+watch(
+  lockUpEpochs,
+  (newValue) => {
+    if (newValue >= 65 && newValue <= 97) {
+      lockUpEpochs.value = 65;
+      sliderRef.value.setValue(65);
+    } else if (newValue >= 98 && newValue <= 130) {
+      lockUpEpochs.value = 130;
+      sliderRef.value.setValue(130);
+    }
+  },
+  { immediate: true },
+);
+
 const { address } = useAccount();
 const chainId = useChainIdTypesafe();
 const queryClient = useQueryClient();
@@ -185,18 +199,14 @@ const timeTillNextEpoch = computed(() => {
   return formatSeconds(secondsTillNextEpoch.value);
 });
 
-const availableEpochs = computed(() => {
-  const result = [];
-  for (
-    let i = LOWER_STAKE_LOCK_UP_EPOCHS;
-    i <= UPPER_STAKE_LOCK_UP_EPOCHS;
-    i++
-  ) {
-    result.push(i);
-  }
-  result.push(MAX_STAKE_LOCK_UP_EPOCHS);
-  return result;
-});
+const marks = {
+  "13": "1 year",
+  "26": "2 years",
+  "39": "3 years",
+  "52": "4 years",
+  "65": "5 years",
+  "130": "10 years",
+};
 
 const checkboxLabel = computed(
   () =>
@@ -257,17 +267,20 @@ const createStakeAction = async () => {
       PWN_TOKEN[getChainIdTypesafe()],
       VE_PWN_TOKEN[getChainIdTypesafe()],
     );
-    const requiredAmount = parseUnits(stakeAmount.value.toString(), 18);
 
-    if (allowance < requiredAmount) {
+    const rawAmount = parseUnits(stakeAmount.value.toString(), 18);
+    // Adjust amount to be divisible by 100 (contract requirement)
+    const adjustedAmount = (rawAmount / 100n) * 100n;
+
+    if (allowance < adjustedAmount) {
       await approveToken({
-        amount: stakeAmount.value.toString(),
+        amount: formatUnits(adjustedAmount, 18),
         spender: VE_PWN_TOKEN[getChainIdTypesafe()],
       });
     }
 
     await createStake({
-      amount: stakeAmount.value.toString(),
+      amount: formatUnits(adjustedAmount, 18),
       lockUpEpochs: lockUpEpochs.value,
     });
   } catch (error) {
@@ -284,7 +297,7 @@ const buttonText = computed(() => {
 });
 
 const isLastValue = (value: number) => {
-  return value === availableEpochs.value[availableEpochs.value.length - 1];
+  return value === MAX_STAKE_LOCK_UP_EPOCHS;
 };
 
 // Add computed properties for potential voting power
@@ -317,16 +330,18 @@ defineExpose({
 <style scoped>
 .create-stake-modal {
   &__body {
-    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    width: 100%;
   }
 
   &__amount-input {
-    margin-top: 0.5rem;
+    margin-top: 1.25rem;
     display: flex;
     align-items: center;
     background: var(--black-input);
     border: 1px solid var(--grey);
     padding: 0.5rem 0.75rem;
+    max-width: 20rem;
   }
 
   &__input {
@@ -366,6 +381,8 @@ defineExpose({
     font-size: 0.75rem;
     color: var(--text-color);
     display: block;
+    margin-bottom: 1rem;
+    margin-top: 1rem;
   }
 
   &__tooltip-text {
@@ -375,9 +392,7 @@ defineExpose({
     color: var(--text-color);
     white-space: nowrap;
     padding-left: 1.25rem;
-    &--last-value {
-      color: var(--negative);
-    }
+    text-align: center;
   }
 
   &__dot {
@@ -391,15 +406,16 @@ defineExpose({
 
   &__label-container {
     display: flex;
-    justify-content: space-between;
+    gap: 1rem;
     align-items: center;
   }
   &__label-container--slider {
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    margin-left: -0.25rem;
   }
 
   &__label {
@@ -415,6 +431,7 @@ defineExpose({
     display: flex;
     justify-content: center;
     width: 100%;
+    margin-top: 1rem;
   }
 
   &__submit-button {
@@ -468,10 +485,11 @@ defineExpose({
   }
 
   &__potential-power {
-    margin-top: 2rem;
+    margin-top: 3rem;
     padding: 1rem;
     background: var(--black-input);
     border: 1px solid var(--grey);
+    width: 60vw;
   }
 
   &__potential-power-stats {
@@ -496,6 +514,48 @@ defineExpose({
     color: var(--text-color);
     font-family: var(--font-family-supreme);
     font-size: 1rem;
+  }
+
+  &__inputs-container {
+    display: flex;
+    column-gap: 5rem;
+    width: 100%;
+  }
+
+  &__lock-duration-container {
+    flex-grow: 2;
+    flex-shrink: 0;
+    border-left: 1px solid var(--grey);
+    padding-left: 5rem;
+  }
+
+  &__slider {
+    cursor: pointer;
+    width: 60% !important;
+    min-width: 30rem;
+  }
+
+  @media only screen and (max-width: 1258px) {
+    &__inputs-container {
+      flex-direction: column;
+      gap: 2rem;
+      align-items: stretch;
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+
+    &__lock-duration-container {
+      padding-left: 0;
+      border-left: none;
+    }
+
+    &__potential-power {
+      width: 100%;
+    }
+
+    &__slider {
+      width: 90% !important;
+    }
   }
 }
 </style>
