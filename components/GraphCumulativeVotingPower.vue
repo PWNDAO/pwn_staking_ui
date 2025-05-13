@@ -1,5 +1,5 @@
 <template>
-  <BaseSkeletor v-if="isFetchingUserCumulativeVotingPower" height="2" />
+  <BaseSkeletor v-if="isFetchingUserCumulativeVotingPower" height="388" />
   <div v-else-if="parsedDataForGraph" class="graph-cumulative-voting-power">
     <div class="graph-cumulative-voting-power__heading">
       <div class="graph-cumulative-voting-power__title-section">

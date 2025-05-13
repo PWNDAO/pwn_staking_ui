@@ -190,6 +190,16 @@ const pwnTokenBalanceFormatted = computed(() => {
   return formatDecimalPoint(formatUnits(pwnTokenBalance.value, 18));
 });
 
+watch(
+  pwnTokenBalance,
+  (newValue) => {
+    if (newValue) {
+      stakeAmount.value = formatUnits(newValue, 18);
+    }
+  },
+  { immediate: true },
+);
+
 const setMaxAmount = () => {
   if (pwnTokenBalance.value) {
     stakeAmount.value = formatUnits(pwnTokenBalance.value, 18);
@@ -198,7 +208,6 @@ const setMaxAmount = () => {
 
 const openModal = () => {
   isOpen.value = true;
-  stakeAmount.value = "";
   lockUpEpochs.value = LOWER_STAKE_LOCK_UP_EPOCHS;
   isCheckboxTicked.value = false;
 };
@@ -557,7 +566,7 @@ defineExpose({
 
   &__slider {
     cursor: pointer;
-    width: 60% !important;
+    width: 80% !important;
     min-width: 30rem;
     margin-top: 3rem;
   }
