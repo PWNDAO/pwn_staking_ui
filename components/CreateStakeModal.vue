@@ -6,6 +6,16 @@
   >
     <template #body>
       <div class="create-stake-modal__body">
+        <p class="create-stake-modal__paragraph">
+          Stake your $PWN to vote on DAO proposals. The longer you stake, the
+          more voting power you earn.
+          <a
+            class="link link--primary"
+            href="https://docs.pwn.xyz/pwn-dao/pwn-dao#staking-and-voting-power"
+            target="_blank"
+            >Learn more →</a
+          >
+        </p>
         <div class="create-stake-modal__inputs-container">
           <div>
             <div class="create-stake-modal__label-container">
@@ -38,9 +48,6 @@
             </div>
           </div>
           <div class="create-stake-modal__lock-duration-container">
-            <div class="create-stake-modal__label-container--slider">
-              <span class="create-stake-modal__label"> Lock Duration </span>
-            </div>
             <VueSlider
               ref="sliderRef"
               v-model="lockUpEpochs"
@@ -57,16 +64,29 @@
               @click.stop
             >
               <template #tooltip="{ value }">
-                <div :class="['create-stake-modal__tooltip-text']">
-                  {{ value * DAYS_IN_EPOCH }} days ({{
-                    displayShortDate(
-                      new Date(
-                        Date.now() +
-                          (value * SECONDS_IN_EPOCH + secondsTillNextEpoch!) *
-                            1000,
-                      ),
-                    )
-                  }})
+                <div class="create-stake-modal__tooltip-text">
+                  <div>Duration: {{ value * DAYS_IN_EPOCH }} days</div>
+                  <div>
+                    Unlock:
+                    {{
+                      displayShortDate(
+                        new Date(
+                          Date.now() +
+                            (value * SECONDS_IN_EPOCH + secondsTillNextEpoch!) *
+                              1000,
+                        ),
+                      )
+                    }}
+                  </div>
+                  <div>
+                    Voting Power:
+                    {{
+                      (
+                        Number(stakeAmount) *
+                        getMultiplierForLockUpEpochs(value)
+                      ).toFixed(1)
+                    }}
+                  </div>
                 </div>
               </template>
               <template #dot>
@@ -76,7 +96,6 @@
           </div>
         </div>
 
-        <!-- Add potential voting power info -->
         <div class="create-stake-modal__potential-power">
           <GraphCumulativeVotingPower :potential-stake="potentialStake" />
         </div>
@@ -403,7 +422,11 @@ defineExpose({
     color: var(--text-color);
     white-space: nowrap;
     padding-left: 1.25rem;
-    text-align: center;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    margin-bottom: 0.25rem;
   }
 
   &__dot {
@@ -419,14 +442,6 @@ defineExpose({
     display: flex;
     gap: 1rem;
     align-items: center;
-  }
-  &__label-container--slider {
-    margin-bottom: 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    margin-left: -0.25rem;
   }
 
   &__label {
@@ -544,6 +559,7 @@ defineExpose({
     cursor: pointer;
     width: 60% !important;
     min-width: 30rem;
+    margin-top: 3rem;
   }
 
   &__warning-message {
@@ -552,13 +568,18 @@ defineExpose({
     margin-top: 1rem;
   }
 
+  &__paragraph {
+    margin-top: 0;
+    margin-bottom: 3rem;
+  }
+
   @media only screen and (max-width: 1258px) {
     &__inputs-container {
       flex-direction: column;
       gap: 2rem;
       align-items: stretch;
-      padding-left: 2rem;
-      padding-right: 2rem;
+      padding-left: 3rem;
+      padding-right: 3rem;
     }
 
     &__lock-duration-container {

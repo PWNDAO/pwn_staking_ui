@@ -35,6 +35,7 @@ export const getFormattedVotingPower = (
 ): string => {
   return String(Math.floor(Number(formattedAmount) * multiplier));
 };
+
 export const getMultiplierForLockUpEpochs = (lockUpEpochs: number) => {
   const EPOCHS_IN_YEAR = 13;
 
