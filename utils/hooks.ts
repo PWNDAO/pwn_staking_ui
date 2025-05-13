@@ -1,3 +1,4 @@
+import type { QueryClient } from "@tanstack/vue-query";
 import { useQuery, useMutation } from "@tanstack/vue-query";
 import { erc20Abi, parseAbiItem, type Address } from "viem";
 import { getLogs } from "viem/actions";
@@ -362,6 +363,7 @@ export const useApproveToken = (chainId: Ref<SupportedChain>) => {
 };
 
 export const useCreateStake = (
+  queryClient: QueryClient,
   chainId: Ref<SupportedChain>,
   onSuccess?: () => void,
 ) => {
@@ -381,6 +383,13 @@ export const useCreateStake = (
         args: [parseUnits(amount, 18), BigInt(lockUpEpochs)],
       });
     },
-    onSuccess,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["userStakesWithVotingPower"],
+      });
+      queryClient.invalidateQueries({ queryKey: ["stakedPwnBalance"] });
+      queryClient.invalidateQueries({ queryKey: ["useUserPwnBalance"] });
+      onSuccess?.();
+    },
   });
 };

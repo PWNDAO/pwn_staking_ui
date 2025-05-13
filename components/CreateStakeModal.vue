@@ -30,6 +30,12 @@
                 Max
               </button>
             </div>
+            <div
+              v-if="warningMessage"
+              class="create-stake-modal__warning-message"
+            >
+              {{ warningMessage }}
+            </div>
           </div>
           <div class="create-stake-modal__lock-duration-container">
             <div class="create-stake-modal__label-container--slider">
@@ -213,14 +219,25 @@ const checkboxLabel = computed(
     `I understand that this action will lock my tokens for ${MAX_STAKE_LOCK_UP_EPOCHS * DAYS_IN_EPOCH} days (${Math.round((MAX_STAKE_LOCK_UP_EPOCHS * DAYS_IN_EPOCH) / 365)} years)`,
 );
 
+const hasEnoughBalance = computed(() => {
+  if (pwnTokenBalance.value === undefined || pwnTokenBalance.value === 0n) {
+    return false;
+  }
+  return parseUnits(stakeAmount.value.toString(), 18) <= pwnTokenBalance.value;
+});
+
+const warningMessage = computed(() => {
+  if (!hasEnoughBalance.value) {
+    return "Insufficient PWN balance";
+  }
+  return undefined;
+});
+
 const isButtonDisabled = computed(() => {
   if (isPending.value || !stakeAmount.value || !lockUpEpochs.value) return true;
 
   // Check if stake amount exceeds balance
-  if (
-    pwnTokenBalance.value &&
-    parseUnits(stakeAmount.value.toString(), 18) > pwnTokenBalance.value
-  ) {
+  if (!hasEnoughBalance.value) {
     return true;
   }
 
@@ -244,19 +261,13 @@ const tooltipText = computed(() => {
   return "";
 });
 
-const invalidateUserStakesQuery = () => {
-  queryClient.invalidateQueries({ queryKey: ["userStakesWithVotingPower"] });
-  queryClient.invalidateQueries({ queryKey: ["stakedPwnBalance"] });
-  queryClient.invalidateQueries({ queryKey: ["useUserPwnBalance"] });
-};
-
 const { mutateAsync: approveToken, isPending: isApproving } =
   useApproveToken(chainId);
 const { mutateAsync: createStake, isPending: isStaking } = useCreateStake(
+  queryClient,
   chainId,
   () => {
     isOpen.value = false;
-    invalidateUserStakesQuery();
   },
 );
 
@@ -533,6 +544,12 @@ defineExpose({
     cursor: pointer;
     width: 60% !important;
     min-width: 30rem;
+  }
+
+  &__warning-message {
+    color: var(--negative);
+    font-family: var(--font-family-supreme);
+    margin-top: 1rem;
   }
 
   @media only screen and (max-width: 1258px) {
