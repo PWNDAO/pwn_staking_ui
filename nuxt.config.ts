@@ -1,29 +1,29 @@
-import { defineNuxtConfig } from 'nuxt/config'
+import { defineNuxtConfig } from "nuxt/config";
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  modules: ["@wagmi/vue/nuxt", "nuxt-svgo", "@pinia/nuxt", "@nuxt/eslint"],
   ssr: true,
   devtools: { enabled: true },
-  modules: ['@wagmi/vue/nuxt', 'nuxt-svgo', '@pinia/nuxt'],
-  compatibilityDate: '2024-10-02',
+  app: {
+    head: {
+      link: [{ rel: "icon", href: "favicon.ico" }],
+    },
+  },
   css: [
-    '~/assets/css/_variables.css', 
-    '~/assets/css/base.css', 
-    '~/assets/css/fonts.css', 
-    '~/assets/css/normalize.css',
-    'tippy.js/animations/shift-away.css',
-    'tippy.js/dist/svg-arrow.css',
+    "~/assets/css/_variables.css",
+    "~/assets/css/base.css",
+    "~/assets/css/fonts.css",
+    "~/assets/css/normalize.css",
+    "tippy.js/animations/shift-away.css",
+    "tippy.js/dist/svg-arrow.css",
     // TODO do we also need to import vue-skeletor
   ],
-  postcss: {
-    plugins: {
-      'postcss-nested': {},
-    }
-  },
+  compatibilityDate: "2024-10-02",
   nitro: {
     esbuild: {
       options: {
-        target: 'esnext',
+        target: "esnext",
       },
     },
   },
@@ -32,11 +32,12 @@ export default defineNuxtConfig({
     typeCheck: true,
     strict: true,
   },
-  app: {
-    head: {
-      link: [
-        {rel: 'icon', href: 'favicon.ico'}
-      ]
-    }
-  }
-})
+  postcss: {
+    plugins: {
+      "postcss-nested": {},
+    },
+  },
+  eslint: {
+    checker: true,
+  },
+});

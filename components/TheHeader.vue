@@ -10,17 +10,15 @@
         <template v-for="(item, index) in menuItems" :key="index">
           <div
             v-if="!item.isExternal"
-            :class="['header__menu-item', {'header__menu-item--active': item.isActive}]"
+            :class="[
+              'header__menu-item',
+              { 'header__menu-item--active': item.isActive },
+            ]"
           >
             {{ item.label }}
           </div>
 
-          <a
-            v-else
-            :href="item.link"
-            target="_blank"
-            class="header__menu-item"
-          >
+          <a v-else :href="item.link" target="_blank" class="header__menu-item">
             {{ item.label }}
             <svg
               width="10"
@@ -31,7 +29,10 @@
               xmlns="http://www.w3.org/2000/svg"
             >
               <path d="M15 7.125V15H1V1H8.875" strokeLinejoin="bevel" />
-              <path d="M5 11L15 1M15 1V4.33333M15 1H11.6667" strokeLinejoin="bevel" />
+              <path
+                d="M5 11L15 1M15 1V4.33333M15 1H11.6667"
+                strokeLinejoin="bevel"
+              />
             </svg>
           </a>
         </template>
@@ -42,23 +43,21 @@
         ref="menuContainer"
         :class="[
           'header__mobile-nav-menu-content',
-          { 'header__mobile-nav-menu-content--active': menuIsOpen }
+          { 'header__mobile-nav-menu-content--active': menuIsOpen },
         ]"
       >
         <template v-for="(item, index) in menuItems" :key="index">
           <div
             v-if="!item.isExternal"
-            :class="['header__menu-item', {'header__menu-item--active': item.isActive}]"
+            :class="[
+              'header__menu-item',
+              { 'header__menu-item--active': item.isActive },
+            ]"
           >
             {{ item.label }}
           </div>
 
-          <a
-            v-else
-            :href="item.link"
-            target="_blank"
-            class="header__menu-item"
-          >
+          <a v-else :href="item.link" target="_blank" class="header__menu-item">
             {{ item.label }}
             <svg
               width="10"
@@ -69,7 +68,10 @@
               xmlns="http://www.w3.org/2000/svg"
             >
               <path d="M15 7.125V15H1V1H8.875" strokeLinejoin="bevel" />
-              <path d="M5 11L15 1M15 1V4.33333M15 1H11.6667" strokeLinejoin="bevel" />
+              <path
+                d="M5 11L15 1M15 1V4.33333M15 1H11.6667"
+                strokeLinejoin="bevel"
+              />
             </svg>
           </a>
         </template>
@@ -98,75 +100,76 @@
 </template>
 
 <script setup lang="ts">
-import { useAccount, type Config } from '@wagmi/vue'
-import { disconnect } from 'wagmi/actions'
-import { wagmiAdapter } from '~/wagmi'
-import { onClickOutside } from '@vueuse/core'
+import { useAccount } from "@wagmi/vue";
+import { disconnect } from "wagmi/actions";
+import { onClickOutside } from "@vueuse/core";
+import { wagmiAdapter } from "~/wagmi";
 
-const { isConnected, address } = useAccount()
+const { isConnected, address } = useAccount();
 
-const isHoveredOverWallet = ref(false)
-const menuIsOpen = ref(false)
-const menuContainer = ref()
-const expandMenuButton = ref()
+const isHoveredOverWallet = ref(false);
+const menuIsOpen = ref(false);
+const menuContainer = ref();
+const expandMenuButton = ref();
 
 const handleOpenMenu = () => {
-  menuIsOpen.value = !menuIsOpen.value
-}
+  menuIsOpen.value = !menuIsOpen.value;
+};
 
 const closeMenu = () => {
-  menuIsOpen.value = false
-}
+  menuIsOpen.value = false;
+};
 
 onClickOutside(menuContainer, (event) => {
   if (expandMenuButton.value?.$el?.contains(event.target)) {
-    return
+    return;
   }
-  closeMenu()
-})
+  closeMenu();
+});
 
 const menuItems = [
   {
-    label: 'Staking',
+    label: "Staking",
     link: undefined,
     isActive: true,
-    isExternal: false
+    isExternal: false,
   },
   {
-    label: 'Governance',
-    link: 'https://governance.pwn.xyz',
+    label: "Governance",
+    link: "https://governance.pwn.xyz",
     isActive: false,
-    isExternal: true
+    isExternal: true,
   },
   {
-    label: 'App',
-    link: 'https://app.pwn.xyz',
+    label: "App",
+    link: "https://app.pwn.xyz",
     isActive: false,
-    isExternal: true
-  }
-]
+    isExternal: true,
+  },
+];
 
 const walletText = computed(() => {
   if (isConnected.value && address.value) {
-    return isHoveredOverWallet.value ? 'Disconnect' : shortenAddress(address.value)
+    return isHoveredOverWallet.value
+      ? "Disconnect"
+      : shortenAddress(address.value);
   }
-  return 'Connect'
-})
+  return "Connect";
+});
 
 const handleWalletClick = async () => {
   if (isConnected.value) {
-    // @ts-expect-error not sure why it throws
-    await disconnect(wagmiAdapter.wagmiConfig)
+    await disconnect(wagmiAdapter.wagmiConfig);
   } else {
-    await openAppKitModal()
+    await openAppKitModal();
   }
-}
+};
 </script>
 
 <style scoped>
 .header {
   display: flex;
-  padding:0 1.5rem;
+  padding: 0 1.5rem;
   justify-content: space-between;
   font-family: var(--font-family-screener);
   align-items: center;
@@ -228,8 +231,8 @@ const handleWalletClick = async () => {
     justify-content: center;
     align-items: center;
     color: var(--text-color);
-    padding: 0 .5rem;
-    font-size: .75rem;
+    padding: 0 0.5rem;
+    font-size: 0.75rem;
     height: 2rem;
 
     &:hover {
@@ -242,7 +245,7 @@ const handleWalletClick = async () => {
   &__connect-wallet-text {
     width: 100%;
     text-align: center;
-    padding-left: .5rem;
+    padding-left: 0.5rem;
     margin-bottom: -2px;
   }
 
@@ -283,7 +286,9 @@ const handleWalletClick = async () => {
     display: flex;
     flex-flow: column nowrap;
     transform: translateY(-130%);
-    transition: opacity 0.3s ease-in-out, transform 0.4s ease-out;
+    transition:
+      opacity 0.3s ease-in-out,
+      transform 0.4s ease-out;
 
     &--active {
       opacity: 1;

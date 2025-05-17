@@ -1,22 +1,22 @@
 <template>
   <div
     class="expand-menu-container"
-    :class="{'expand-menu-container-active': menuIsOpen}"
-    @click="handleOpenMenu">
-    <span/>
-    <span/>
-    <span/>
+    :class="{ 'expand-menu-container-active': menuIsOpen }"
+    @click="handleOpenMenu"
+  >
+    <span />
+    <span />
+    <span />
   </div>
 </template>
 
 <script lang="ts" setup>
-
 type Props = {
-  menuIsOpen: boolean
-  handleOpenMenu: () => void
-}
+  menuIsOpen: boolean;
+  handleOpenMenu: () => void;
+};
 
-defineProps<Props>()
+defineProps<Props>();
 </script>
 
 <style scoped>
