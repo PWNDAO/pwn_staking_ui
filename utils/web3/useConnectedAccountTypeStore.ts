@@ -1,4 +1,5 @@
-import { useBytecode, useAccount } from "@wagmi/vue";
+import { useAccount, useReadContract } from "@wagmi/vue";
+import { parseAbi } from "viem";
 import { computed } from "vue";
 
 export const useConnectedAccountTypeStore = defineStore(
@@ -10,19 +11,23 @@ export const useConnectedAccountTypeStore = defineStore(
       isConnected,
     } = useAccount();
 
-    const { data: bytecodeAtUserAddress } = useBytecode({
+    const { data: safeOwners, isError: isSafeReadError } = useReadContract({
       address: userAddress,
       chainId: connectedChainId,
-      // TODO scope key?
+      abi: parseAbi([
+        "function getThreshold() external view returns (uint256)",
+      ]),
+      functionName: "getThreshold",
       query: {
         enabled: isConnected,
         staleTime: Infinity,
-        // TODO select parameter?
+        retry: 1,
       },
     });
-    const isConnectedContractWallet = computed(
-      () => !!bytecodeAtUserAddress.value,
-    );
+
+    const isConnectedContractWallet = computed(() => {
+      return !isSafeReadError.value && safeOwners.value && safeOwners.value > 1;
+    });
 
     return {
       isConnectedContractWallet,

@@ -111,7 +111,7 @@ import { formatUnits, parseUnits } from "viem";
 import type { Address } from "abitype";
 import { shortenAddress } from "../utils/web3";
 import { TooltipBorderColor } from "./BaseTooltip.vue";
-import { SECONDS_IN_EPOCH } from "~/constants/contracts";
+import { PWN_TOKEN_DECIMALS, SECONDS_IN_EPOCH } from "~/constants/contracts";
 import { formatSeconds } from "@/utils/date";
 import { useChainIdTypesafe } from "~/constants/chain";
 import {
@@ -209,7 +209,10 @@ const tableRowsData = computed<TableRowData[]>(() => {
   }
   const userStakes: TableRowData[] =
     userStakesWithVotingPowerFiltered?.value?.map((stake) => {
-      const formattedStakedAmount = formatUnits(stake.amount, 18);
+      const formattedStakedAmount = formatUnits(
+        stake.amount,
+        PWN_TOKEN_DECIMALS,
+      );
 
       const multiplier = getMultiplierForLockUpEpochs(
         Math.min(stake.remainingEpochs, stake.lockUpEpochs),
@@ -255,7 +258,10 @@ const tableRowsData = computed<TableRowData[]>(() => {
 
   const userNextEpochStakes: TableRowData[] =
     userStakesWithVotingPowerNextEpochFiltered?.value?.map((stake) => {
-      const formattedStakedAmount = formatUnits(stake.amount, 18);
+      const formattedStakedAmount = formatUnits(
+        stake.amount,
+        PWN_TOKEN_DECIMALS,
+      );
 
       const multiplier = getMultiplierForLockUpEpochs(
         Math.min(stake.remainingEpochs, stake.lockUpEpochs),
@@ -357,8 +363,8 @@ const sortedTableRowsData = computed(() => {
         }
       }
       case "amount": {
-        const aAmount = parseUnits(a.amount, 18);
-        const bAmount = parseUnits(b.amount, 18);
+        const aAmount = parseUnits(a.amount, PWN_TOKEN_DECIMALS);
+        const bAmount = parseUnits(b.amount, PWN_TOKEN_DECIMALS);
 
         if (sortingDirection.value === "desc") {
           return aAmount > bAmount ? -1 : 1;
@@ -367,8 +373,8 @@ const sortedTableRowsData = computed(() => {
         }
       }
       case "votingPower": {
-        const aVotingPower = parseUnits(a.votingPower, 18);
-        const bVotingPower = parseUnits(b.votingPower, 18);
+        const aVotingPower = parseUnits(a.votingPower, PWN_TOKEN_DECIMALS);
+        const bVotingPower = parseUnits(b.votingPower, PWN_TOKEN_DECIMALS);
 
         if (sortingDirection.value === "desc") {
           return aVotingPower > bVotingPower ? -1 : 1;

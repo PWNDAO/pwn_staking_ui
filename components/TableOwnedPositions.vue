@@ -156,6 +156,7 @@ import { TooltipBorderColor } from "./BaseTooltip.vue";
 import {
   SECONDS_IN_EPOCH,
   MIN_STAKE_DURATION_IN_EPOCH,
+  PWN_TOKEN_DECIMALS,
 } from "~/constants/contracts";
 import { formatSeconds } from "@/utils/date";
 import { useChainIdTypesafe } from "~/constants/chain";
@@ -226,7 +227,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
     return [];
   }
   const userStakes: TableRowData[] = stakes.data.value.map((stake) => {
-    const formattedStakedAmount = formatUnits(stake.amount, 18);
+    const formattedStakedAmount = formatUnits(stake.amount, PWN_TOKEN_DECIMALS);
 
     const multiplier = getMultiplierForLockUpEpochs(
       Math.min(stake.remainingEpochs, stake.lockUpEpochs),
@@ -304,7 +305,7 @@ const tableRowsData = computed<TableRowData[]>(() => {
       userStakes.push({
         id: BigInt(index + 1), // arbitrary number as vestings does not have stake id
         idText: `Vesting ${index + 1}`,
-        amount: formatUnits(vestedToken.amount, 18),
+        amount: formatUnits(vestedToken.amount, PWN_TOKEN_DECIMALS),
         votingPower: "0",
         multiplier: 0,
         lockUpEpochs,
@@ -382,8 +383,8 @@ const sortedTableRowsData = computed(() => {
         }
       }
       case "amount": {
-        const aAmount = parseUnits(a.amount, 18);
-        const bAmount = parseUnits(b.amount, 18);
+        const aAmount = parseUnits(a.amount, PWN_TOKEN_DECIMALS);
+        const bAmount = parseUnits(b.amount, PWN_TOKEN_DECIMALS);
 
         if (sortingDirection.value === "desc") {
           return aAmount > bAmount ? -1 : 1;
@@ -392,8 +393,8 @@ const sortedTableRowsData = computed(() => {
         }
       }
       case "votingPower": {
-        const aVotingPower = parseUnits(a.votingPower, 18);
-        const bVotingPower = parseUnits(b.votingPower, 18);
+        const aVotingPower = parseUnits(a.votingPower, PWN_TOKEN_DECIMALS);
+        const bVotingPower = parseUnits(b.votingPower, PWN_TOKEN_DECIMALS);
 
         if (sortingDirection.value === "desc") {
           return aVotingPower > bVotingPower ? -1 : 1;

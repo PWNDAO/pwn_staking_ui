@@ -39,12 +39,12 @@
               >
                 Max
               </button>
-            </div>
-            <div
-              v-if="warningMessage"
-              class="create-stake-modal__warning-message"
-            >
-              {{ warningMessage }}
+              <div
+                v-if="warningMessage"
+                class="create-stake-modal__warning-message"
+              >
+                {{ warningMessage }}
+              </div>
             </div>
           </div>
           <div class="create-stake-modal__lock-duration-container">
@@ -141,7 +141,11 @@ import { parseUnits, formatUnits } from "viem";
 import { VE_PWN_TOKEN, PWN_TOKEN } from "~/constants/addresses";
 import { getChainIdTypesafe, useChainIdTypesafe } from "~/constants/chain";
 import { formatSeconds, displayShortDate } from "~/utils/date";
-import { SECONDS_IN_EPOCH, DAYS_IN_EPOCH } from "~/constants/contracts";
+import {
+  SECONDS_IN_EPOCH,
+  DAYS_IN_EPOCH,
+  PWN_TOKEN_DECIMALS,
+} from "~/constants/contracts";
 import BaseCheckbox from "~/components/BaseCheckbox.vue";
 import {
   useUserPwnBalance,
@@ -187,14 +191,16 @@ const pwnTokenBalanceFormatted = computed(() => {
   if (pwnTokenBalance.value === undefined || pwnTokenBalance.value === 0n) {
     return "0";
   }
-  return formatDecimalPoint(formatUnits(pwnTokenBalance.value, 18));
+  return formatDecimalPoint(
+    formatUnits(pwnTokenBalance.value, PWN_TOKEN_DECIMALS),
+  );
 });
 
 watch(
   pwnTokenBalance,
   (newValue) => {
     if (newValue) {
-      stakeAmount.value = formatUnits(newValue, 18);
+      stakeAmount.value = formatUnits(newValue, PWN_TOKEN_DECIMALS);
     }
   },
   { immediate: true },
@@ -202,7 +208,7 @@ watch(
 
 const setMaxAmount = () => {
   if (pwnTokenBalance.value) {
-    stakeAmount.value = formatUnits(pwnTokenBalance.value, 18);
+    stakeAmount.value = formatUnits(pwnTokenBalance.value, PWN_TOKEN_DECIMALS);
   }
 };
 
@@ -251,7 +257,10 @@ const hasEnoughBalance = computed(() => {
   if (pwnTokenBalance.value === undefined || pwnTokenBalance.value === 0n) {
     return false;
   }
-  return parseUnits(stakeAmount.value.toString(), 18) <= pwnTokenBalance.value;
+  return (
+    parseUnits(stakeAmount.value.toString(), PWN_TOKEN_DECIMALS) <=
+    pwnTokenBalance.value
+  );
 });
 
 const warningMessage = computed(() => {
@@ -280,7 +289,8 @@ const tooltipText = computed(() => {
   if (!lockUpEpochs.value) return "Please select duration";
   if (
     pwnTokenBalance.value &&
-    parseUnits(stakeAmount.value.toString(), 18) > pwnTokenBalance.value
+    parseUnits(stakeAmount.value.toString(), PWN_TOKEN_DECIMALS) >
+      pwnTokenBalance.value
   ) {
     return "Insufficient PWN balance";
   }
@@ -307,19 +317,22 @@ const createStakeAction = async () => {
       VE_PWN_TOKEN[getChainIdTypesafe()],
     );
 
-    const rawAmount = parseUnits(stakeAmount.value.toString(), 18);
+    const rawAmount = parseUnits(
+      stakeAmount.value.toString(),
+      PWN_TOKEN_DECIMALS,
+    );
     // Adjust amount to be divisible by 100 (contract requirement)
     const adjustedAmount = (rawAmount / 100n) * 100n;
 
     if (allowance < adjustedAmount) {
       await approveToken({
-        amount: formatUnits(adjustedAmount, 18),
+        amount: formatUnits(adjustedAmount, PWN_TOKEN_DECIMALS),
         spender: VE_PWN_TOKEN[getChainIdTypesafe()],
       });
     }
 
     await createStake({
-      amount: formatUnits(adjustedAmount, 18),
+      amount: formatUnits(adjustedAmount, PWN_TOKEN_DECIMALS),
       lockUpEpochs: lockUpEpochs.value,
     });
   } catch (error) {
@@ -339,21 +352,10 @@ const isLastValue = (value: number) => {
   return value === MAX_STAKE_LOCK_UP_EPOCHS;
 };
 
-// Add computed properties for potential voting power
-// const potentialMultiplier = computed(() => {
-//   if (!lockUpEpochs.value) return 0
-//   return getMultiplierForLockUpEpochs(lockUpEpochs.value)
-// })
-
-// const potentialVotingPower = computed(() => {
-//   if (!stakeAmount.value || !lockUpEpochs.value) return '0'
-//   return getFormattedVotingPower(stakeAmount.value, potentialMultiplier.value)
-// })
-
 const potentialStake = computed(() => {
   if (!stakeAmount.value || !lockUpEpochs.value) return undefined;
   return {
-    amount: parseUnits(stakeAmount.value.toString() || "0", 18),
+    amount: parseUnits(stakeAmount.value.toString() || "0", PWN_TOKEN_DECIMALS),
     lockUpEpochs: lockUpEpochs.value,
     initialEpoch: epoch.value ? Number(epoch.value) + 1 : undefined, // Stake starts next epoch
   };
@@ -381,6 +383,7 @@ defineExpose({
     border: 1px solid var(--grey);
     padding: 0.5rem 0.75rem;
     max-width: 20rem;
+    position: relative;
   }
 
   &__input {
@@ -575,6 +578,9 @@ defineExpose({
     color: var(--negative);
     font-family: var(--font-family-supreme);
     margin-top: 1rem;
+    position: absolute;
+    bottom: -1.75rem;
+    left: 0.5rem;
   }
 
   &__paragraph {

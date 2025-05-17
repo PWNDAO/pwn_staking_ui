@@ -20,6 +20,7 @@ import type {
 } from "~/types/contractResults";
 import { wagmiAdapter } from "~/wagmi";
 import { sendTransaction } from "~/utils/useTransactions";
+import { PWN_TOKEN_DECIMALS } from "~/constants/contracts";
 
 export const useUserPwnBalance = (
   walletAddress: Ref<Address | undefined>,
@@ -356,7 +357,7 @@ export const useApproveToken = (chainId: Ref<SupportedChain>) => {
         address: PWN_TOKEN[chainId.value],
         functionName: "approve",
         chainId: chainId.value,
-        args: [spender, parseUnits(amount, 18)],
+        args: [spender, parseUnits(amount, PWN_TOKEN_DECIMALS)],
       });
     },
   });
@@ -380,7 +381,7 @@ export const useCreateStake = (
         address: VE_PWN_TOKEN[chainId.value],
         functionName: "createStake",
         chainId: chainId.value,
-        args: [parseUnits(amount, 18), BigInt(lockUpEpochs)],
+        args: [parseUnits(amount, PWN_TOKEN_DECIMALS), BigInt(lockUpEpochs)],
       });
     },
     onSuccess: () => {

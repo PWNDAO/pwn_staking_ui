@@ -3,7 +3,7 @@ import { formatUnits } from "viem";
 import { VE_PWN_TOKEN_ABI } from "~/constants/abis";
 import { VE_PWN_TOKEN } from "~/constants/addresses";
 import { getChainIdTypesafe } from "~/constants/chain";
-import { SECONDS_IN_EPOCH } from "~/constants/contracts";
+import { PWN_TOKEN_DECIMALS, SECONDS_IN_EPOCH } from "~/constants/contracts";
 import type { StakeDetail } from "~/types/contractResults";
 import { wagmiAdapter } from "~/wagmi";
 
@@ -20,7 +20,9 @@ export const calculateUserVotingMultiplier = (
       stakeDetail.initialEpoch + stakeDetail.lockUpEpochs;
     const remainingEpochs = epochWhereUnlock - epochToCalculateIn;
     const multiplier = getMultiplierForLockUpEpochs(remainingEpochs);
-    const formattedAmount = Number(formatUnits(stakeDetail.amount, 18));
+    const formattedAmount = Number(
+      formatUnits(stakeDetail.amount, PWN_TOKEN_DECIMALS),
+    );
     if (multiplier > 0) {
       denominator += formattedAmount;
       numerator += formattedAmount * multiplier;

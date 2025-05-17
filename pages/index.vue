@@ -106,7 +106,7 @@
       </div>
     </div>
 
-    <GraphCumulativeVotingPower />
+    <GraphCumulativeVotingPower :display-legend="false" />
 
     <div v-if="hasAnyStake" class="homepage__positions">
       <h3 class="homepage__positions-heading">
@@ -143,7 +143,7 @@ import {
   toggleActiveChain,
   useChainIdTypesafe,
 } from "~/constants/chain";
-import { SECONDS_IN_EPOCH } from "~/constants/contracts";
+import { PWN_TOKEN_DECIMALS, SECONDS_IN_EPOCH } from "~/constants/contracts";
 import { useUserStakesWithVotingPower } from "~/utils/hooks";
 import { calculateUserVotingMultiplier } from "~/utils/parsing";
 import { formatDecimalPoint } from "~/utils/utils";
@@ -169,7 +169,9 @@ const pwnTokenBalanceFormatted = computed(() => {
     return "None";
   }
 
-  return formatDecimalPoint(formatUnits(pwnTokenBalance.value, 18));
+  return formatDecimalPoint(
+    formatUnits(pwnTokenBalance.value, PWN_TOKEN_DECIMALS),
+  );
 });
 const isFetchingPwnTokenBalance = computed(
   () => pwnTokenBalanceQuery.isLoading.value,
@@ -199,7 +201,9 @@ const stakedTokensFormatted = computed(() => {
     return "None";
   }
 
-  return formatDecimalPoint(formatUnits(stakedTokens.value, 18));
+  return formatDecimalPoint(
+    formatUnits(stakedTokens.value, PWN_TOKEN_DECIMALS),
+  );
 });
 const currentEpochQuery = useCurrentEpoch(chainId);
 const currentEpoch = computed(() => {
@@ -235,7 +239,7 @@ const votingPowerFormatted = computed(() => {
     return "No voting power";
   }
 
-  return formatDecimalPoint(formatUnits(votingPower.value, 18));
+  return formatDecimalPoint(formatUnits(votingPower.value, PWN_TOKEN_DECIMALS));
 });
 const isFetchingVotingPower = computed(() => votingPowerQuery.isLoading.value);
 
@@ -365,7 +369,9 @@ const vestedTokensAmountFormatted = computed(() => {
     return undefined;
   }
 
-  return formatDecimalPoint(formatUnits(vestedTokensAmount.value, 18));
+  return formatDecimalPoint(
+    formatUnits(vestedTokensAmount.value, PWN_TOKEN_DECIMALS),
+  );
 });
 
 const totalPwnTokens = computed(() => {
@@ -376,7 +382,9 @@ const totalPwnTokens = computed(() => {
   );
 });
 const totalPwnTokensFormatted = computed(() => {
-  return formatDecimalPoint(formatUnits(totalPwnTokens.value ?? 0n, 18));
+  return formatDecimalPoint(
+    formatUnits(totalPwnTokens.value ?? 0n, PWN_TOKEN_DECIMALS),
+  );
 });
 
 const showEpochSwitcher =

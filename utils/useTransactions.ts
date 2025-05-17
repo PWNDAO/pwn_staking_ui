@@ -79,7 +79,6 @@ export async function sendTransaction<
 ): Promise<TransactionReceipt> {
   console.log("Starting to send a transaction with following parameters:");
   console.log(transaction);
-  // console.log(`Additional UI parameter passed to sendTransaction: step=${step?.text}, safeAddress=${safeAddress}`)
 
   const connectedChainId = getAccount(wagmiAdapter.wagmiConfig).chainId;
   console.log(

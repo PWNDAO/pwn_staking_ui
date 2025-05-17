@@ -5,7 +5,7 @@
       <div class="graph-cumulative-voting-power__title-section">
         <span>Voting Power Over Time</span>
         <div
-          v-if="props.potentialStake"
+          v-if="props.displayLegend"
           class="graph-cumulative-voting-power__legend"
         >
           <div class="graph-cumulative-voting-power__legend-item">
@@ -53,7 +53,10 @@ import {
   type Point,
 } from "chart.js";
 import { formatUnits } from "viem";
-import { MAX_EPOCHS_IN_FUTURE } from "~/constants/contracts";
+import {
+  MAX_EPOCHS_IN_FUTURE,
+  PWN_TOKEN_DECIMALS,
+} from "~/constants/contracts";
 import { useChainIdTypesafe } from "~/constants/chain";
 import "chartjs-adapter-date-fns";
 import {
@@ -72,9 +75,15 @@ interface PotentialStake {
   initialEpoch?: number;
 }
 
-const props = defineProps<{
-  potentialStake?: PotentialStake;
-}>();
+const props = withDefaults(
+  defineProps<{
+    potentialStake?: PotentialStake;
+    displayLegend?: boolean;
+  }>(),
+  {
+    displayLegend: true,
+  },
+);
 
 const highlightCurrentEpochPlugin = {
   id: "highlightCurrentEpoch",
@@ -212,7 +221,7 @@ const parsedDataForGraph = computed(() => {
         Number(initialEpochTimestamp.value),
         Number(votingPowerInEpoch.epoch),
       ),
-      y: Number(formatUnits(votingPowerInEpoch.power, 18)),
+      y: Number(formatUnits(votingPowerInEpoch.power, PWN_TOKEN_DECIMALS)),
       epoch: votingPowerInEpoch.epoch.toString(),
     })),
     pointRadius: 0,
@@ -231,7 +240,9 @@ const parsedDataForGraph = computed(() => {
   if (props.potentialStake && props.potentialStake.initialEpoch !== undefined) {
     const potentialData = dataPoints.map((votingPowerInEpoch) => {
       const epochNumber = Number(votingPowerInEpoch.epoch);
-      const existingPower = Number(formatUnits(votingPowerInEpoch.power, 18));
+      const existingPower = Number(
+        formatUnits(votingPowerInEpoch.power, PWN_TOKEN_DECIMALS),
+      );
 
       // Only add potential power for future epochs after stake starts
       if (epochNumber >= props.potentialStake!.initialEpoch!) {
@@ -241,7 +252,9 @@ const parsedDataForGraph = computed(() => {
         if (remainingEpochs > 0) {
           const multiplier = getMultiplierForLockUpEpochs(remainingEpochs);
           const newPotentialPower =
-            Number(formatUnits(props.potentialStake!.amount, 18)) * multiplier;
+            Number(
+              formatUnits(props.potentialStake!.amount, PWN_TOKEN_DECIMALS),
+            ) * multiplier;
           return {
             x: getStartDateOfEpoch(
               Number(initialEpochTimestamp.value),
